@@ -1,0 +1,156 @@
+# Visual Studio 2022
+.vs/
+[Oo]bj/
+[Bb]in/
+[Dd]ebug*/
+[Rr]elease*/
+x64/
+x86/
+[Bb]uild*/
+[Cc]ache/
+[Ll]ogs/
+
+# Visual Studio 2022 files
+*.sdf
+*.opensdf
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio 2022 Intellisense
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio 2022 patches
+*.patch
+
+# Visual Studio 2022 Project Filter Files
+*.vcxproj.filters
+
+# Visual Studio 2022 C++ Specific
+*.pch
+*.ilk
+*.meta
+*.obj
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.vspscc
+*.vssscc
+*.ipch
+*.aps
+*.ncb
+*.opendb
+*.rc2
+
+# C++ Specific
+*.o
+*.so
+*.dll
+*.exe
+*.out
+*.app
+*.dylib
+*.lib
+*.a
+
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+# Clang
+*.gcda
+*.gcno
+*.clangd
+*.clang-tidy
+*.clang-format
+
+# Build system
+build/
+dist/
+*.msi
+*.msm
+*.msp
+*.msu
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Logs
+*.log
+
+# User specific files
+*.userprefs
+*.usertasks
+
+# Backup files
+*.bak
+*.backup
+
+# NuGet
+packages/
+*.nuget.props
+*.nuget.targets
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# TeamCity
+_TeamCity*
+
+# DotCover
+*.dotCover
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# MightyMoose
+*.mm.*
+AutoTest.Net/
+
+# Web workbench (sass)
+.sass-cache/
+
+# Installshield output
+*.exe
+*.msi
+
+# Output directories
+out/
+Debug*/
+Release*/
