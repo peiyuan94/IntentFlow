@@ -1,17 +1,3 @@
-﻿// 这段 MFC 示例源代码演示如何使用 MFC Microsoft Office Fluent 用户界面
-// (“Fluent UI”)。该示例仅供参考，
-// 用以补充《Microsoft 基础类参考》和
-// MFC C++ 库软件随附的相关电子文档。
-// 复制、使用或分发 Fluent UI 的许可条款是单独提供的。
-// 若要了解有关 Fluent UI 许可计划的详细信息，请访问
-// https://go.microsoft.com/fwlink/?LinkId=238214.
-//
-// 版权所有(C) Microsoft Corporation
-// 保留所有权利。
-
-// IntentFlow.cpp: 定义应用程序的类行为。
-//
-
 #include "pch.h"
 #include "framework.h"
 #include "afxwinappex.h"
@@ -32,48 +18,48 @@
 
 BEGIN_MESSAGE_MAP(CIntentFlowApp, CWinAppEx)
 	ON_COMMAND(ID_APP_ABOUT, &CIntentFlowApp::OnAppAbout)
-	// 基于文件的标准文档命令
+	// Standard document commands based on files
 	ON_COMMAND(ID_FILE_NEW, &CWinAppEx::OnFileNew)
 	ON_COMMAND(ID_FILE_OPEN, &CWinAppEx::OnFileOpen)
 END_MESSAGE_MAP()
 
 
-// CIntentFlowApp 构造
+// CIntentFlowApp construction
 
 CIntentFlowApp::CIntentFlowApp() noexcept
 {
 
 	m_nAppLook = 0;
-	// 支持重新启动管理器
+	// Support Restart Manager
 	m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_ALL_ASPECTS;
 #ifdef _MANAGED
-	// 如果应用程序是利用公共语言运行时支持(/clr)构建的，则: 
-	//     1) 必须有此附加设置，“重新启动管理器”支持才能正常工作。
-	//     2) 在您的项目中，您必须按照生成顺序向 System.Windows.Forms 添加引用。
+	// If the application is built with Common Language Runtime support (/clr): 
+	//     1) This additional setting is required for Restart Manager support to work properly.
+	//     2) In your project, you must add a reference to System.Windows.Forms in order to build your project.
 	System::Windows::Forms::Application::SetUnhandledExceptionMode(System::Windows::Forms::UnhandledExceptionMode::ThrowException);
 #endif
 
-	// TODO: 将以下应用程序 ID 字符串替换为唯一的 ID 字符串；建议的字符串格式
-	//为 CompanyName.ProductName.SubProduct.VersionInformation
+	// TODO: Replace the following application ID string with your own unique ID string; 
+	// recommended format for string is CompanyName.ProductName.SubProduct.VersionInformation
 	SetAppID(_T("IntentFlow.AppID.NoVersion"));
 
-	// TODO:  在此处添加构造代码，
-	// 将所有重要的初始化放置在 InitInstance 中
+	// TODO: Add construction code here,
+	// Place all significant initialization in InitInstance
 }
 
-// 唯一的 CIntentFlowApp 对象
+// The one and only CIntentFlowApp object
 
 CIntentFlowApp theApp;
 
 
-// CIntentFlowApp 初始化
+// CIntentFlowApp initialization
 
 BOOL CIntentFlowApp::InitInstance()
 {
 	CWinAppEx::InitInstance();
 
 
-	// 初始化 OLE 库
+	// Initialize OLE libraries
 	if (!AfxOleInit())
 	{
 		AfxMessageBox(IDP_OLE_INIT_FAILED);
@@ -84,18 +70,18 @@ BOOL CIntentFlowApp::InitInstance()
 
 	EnableTaskbarInteraction();
 
-	// 使用 RichEdit 控件需要 AfxInitRichEdit2()
+	// Use RichEdit control	Need to include afxrich.h
 	// AfxInitRichEdit2();
 
-	// 标准初始化
-	// 如果未使用这些功能并希望减小
-	// 最终可执行文件的大小，则应移除下列
-	// 不需要的特定初始化例程
-	// 更改用于存储设置的注册表项
-	// TODO: 应适当修改该字符串，
-	// 例如修改为公司或组织名
-	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
-	LoadStdProfileSettings(4);  // 加载标准 INI 文件选项(包括 MRU)
+	// Standard initialization
+	// If you are not using these features and wish to reduce the final executable size,
+	// you should remove from the following
+	// the specific initialization routines you do not need
+	// Change the registry key under which our settings are stored
+	// TODO: You should modify this string to be something appropriate
+	// such as your company or organization name
+	SetRegistryKey(_T("Application Wizard Generated Local Application"));
+	LoadStdProfileSettings(4);  // Load standard INI file options (including MRU)
 
 
 	InitContextMenuManager();
@@ -108,18 +94,21 @@ BOOL CIntentFlowApp::InitInstance()
 	theApp.GetTooltipManager()->SetTooltipParams(AFX_TOOLTIP_TYPE_ALL,
 		RUNTIME_CLASS(CMFCToolTipCtrl), &ttParams);
 
-	// 注册应用程序的文档模板。  文档模板
-	// 将用作文档、框架窗口和视图之间的连接
+	// Register the application's document templates.  Document templates
+	// serve as the connection between documents, frame windows and views
 	CMultiDocTemplate* pDocTemplate;
 	pDocTemplate = new CMultiDocTemplate(IDR_IntentFlowTYPE,
 		RUNTIME_CLASS(CIntentFlowDoc),
-		RUNTIME_CLASS(CChildFrame), // 自定义 MDI 子框架
+		RUNTIME_CLASS(CChildFrame), // custom MDI child frame
 		RUNTIME_CLASS(CIntentFlowView));
 	if (!pDocTemplate)
 		return FALSE;
 	AddDocTemplate(pDocTemplate);
+	
+	// Save the document template pointer
+	m_pDocTemplate = pDocTemplate;
 
-	// 创建主 MDI 框架窗口
+	// Create main MDI Frame window
 	CMainFrame* pMainFrame = new CMainFrame;
 	if (!pMainFrame || !pMainFrame->LoadFrame(IDR_MAINFRAME))
 	{
@@ -129,17 +118,17 @@ BOOL CIntentFlowApp::InitInstance()
 	m_pMainWnd = pMainFrame;
 
 
-	// 分析标准 shell 命令、DDE、打开文件操作的命令行
+	// Parse command line for standard shell commands, DDE, file open
 	CCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);
 
 
 
-	// 调度在命令行中指定的命令。  如果
-	// 用 /RegServer、/Register、/Unregserver 或 /Unregister 启动应用程序，则返回 FALSE。
+	// Dispatch commands specified on the command line.  Will return FALSE if
+	// app was launched with /RegServer, /Register, /Unregserver or /Unregister.
 	if (!ProcessShellCommand(cmdInfo))
 		return FALSE;
-	// 主窗口已初始化，因此显示它并对其进行更新
+	// The main window has been initialized, so show and update it
 	pMainFrame->ShowWindow(m_nCmdShow);
 	pMainFrame->UpdateWindow();
 
@@ -148,31 +137,31 @@ BOOL CIntentFlowApp::InitInstance()
 
 int CIntentFlowApp::ExitInstance()
 {
-	//TODO: 处理可能已添加的附加资源
+	//TODO: Handle additional resources you may have added
 	AfxOleTerm(FALSE);
 
 	return CWinAppEx::ExitInstance();
 }
 
-// CIntentFlowApp 消息处理程序
+// CIntentFlowApp message handlers
 
 
-// 用于应用程序“关于”菜单项的 CAboutDlg 对话框
+// Used to display the "About" dialog box
 
 class CAboutDlg : public CDialogEx
 {
 public:
 	CAboutDlg() noexcept;
 
-// 对话框数据
+// Dialog Data
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_ABOUTBOX };
 #endif
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
-// 实现
+// Implementation
 protected:
 	DECLARE_MESSAGE_MAP()
 };
@@ -189,14 +178,14 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
-// 用于运行对话框的应用程序命令
+// App command to run the dialog
 void CIntentFlowApp::OnAppAbout()
 {
 	CAboutDlg aboutDlg;
 	aboutDlg.DoModal();
 }
 
-// CIntentFlowApp 自定义加载/保存方法
+// CIntentFlowApp customization load/save methods
 
 void CIntentFlowApp::PreLoadState()
 {
@@ -214,8 +203,3 @@ void CIntentFlowApp::LoadCustomState()
 void CIntentFlowApp::SaveCustomState()
 {
 }
-
-// CIntentFlowApp 消息处理程序
-
-
-
