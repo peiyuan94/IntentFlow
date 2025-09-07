@@ -64,49 +64,19 @@ TestInterface::TestResult TestInterface::executeTest(const std::string& imagePat
 std::string TestInterface::buildGroundingPrompt(const std::string& question) {
     // Ensure Chinese questions are handled correctly
     std::wstring unicodeQuestion = QwenAPI::UTF8ToUnicode(question);
-    std::string utf8Prompt = R"({
-        "role": "user",
-        "content": [
-            {
-                "image": "IMAGE_PLACEHOLDER"
-            },
-            {
-                "text": "Please provide the bounding box coordinates for the UI element mentioned in the question: )" + question + R"("
-            }
-        ]
-    })";
+    std::string utf8Prompt = "Please provide the bounding box coordinates for the UI element mentioned in the question: " + question;
     return utf8Prompt;
 }
 
 std::string TestInterface::buildReferringPrompt(int x, int y) {
-    std::string utf8Prompt = R"({
-        "role": "user",
-        "content": [
-            {
-                "image": "IMAGE_PLACEHOLDER"
-            },
-            {
-                "text": "What UI element is located at coordinates ()" + std::to_string(x) + ", " + std::to_string(y) + R"()? Please describe its function."
-            }
-        ]
-    })";
+    std::string utf8Prompt = "What UI element is located at coordinates (" + std::to_string(x) + ", " + std::to_string(y) + ")? Please describe its function.";
     return utf8Prompt;
 }
 
 std::string TestInterface::buildVQAPrompt(const std::string& question) {
     // Ensure Chinese questions are handled correctly
     std::wstring unicodeQuestion = QwenAPI::UTF8ToUnicode(question);
-    std::string utf8Prompt = R"({
-        "role": "user",
-        "content": [
-            {
-                "image": "IMAGE_PLACEHOLDER"
-            },
-            {
-                "text": "Answer the following question about the UI: )" + question + R"("
-            }
-        ]
-    })";
+    std::string utf8Prompt = "Answer the following question about the UI: " + question;
     return utf8Prompt;
 }
 

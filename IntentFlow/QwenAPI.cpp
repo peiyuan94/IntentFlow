@@ -24,7 +24,7 @@ QwenAPI::APIResponse QwenAPI::sendImageQuery(const std::string& imagePath, const
 
 QwenAPI::APIResponse QwenAPI::sendImageQuery(const std::vector<std::string>& imagePaths, const std::string& prompt) {
     return executeWithRetry([&]() -> APIResponse {
-        // 图片转换为Base64编码
+        // Encode images to Base64
         std::vector<std::string> base64Images;
         for (const auto& imagePath : imagePaths) {
             std::string base64Image = encodeImageToBase64(imagePath);
@@ -34,13 +34,13 @@ QwenAPI::APIResponse QwenAPI::sendImageQuery(const std::vector<std::string>& ima
             base64Images.push_back(base64Image);
         }
 
-        // 构造请求体
+        // Construct request body
         std::string requestBody = constructRequestBody(base64Images, prompt);
         if (requestBody.empty()) {
             return APIResponse{ false, "", "Failed to construct request body", -1 };
         }
 
-        // 发送HTTP请求
+        // Send HTTP request
         return sendHttpRequest(requestBody);
         });
 }
@@ -60,7 +60,7 @@ std::string QwenAPI::encodeImageToBase64(const std::string& imagePath) {
         return "";
     }
 
-    // 转换成Base64编码
+    // Convert to Base64 encoding
     static const char* base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz"
@@ -114,71 +114,66 @@ bool QwenAPI::validateApiKey(const std::string& apiKey) {
 }
 
 std::string QwenAPI::constructRequestBody(const std::vector<std::string>& base64Images, const std::string& prompt) {
+    // Convert prompt to wide string then to UTF-8 to ensure proper handling of Chinese characters
+    std::wstring widePrompt = ANSIToUnicode(prompt);
+    std::string utf8Prompt = UnicodeToUTF8(widePrompt);
+    
     // Manually construct JSON request body without JsonCpp library
-    std::string escapedPrompt = prompt;
+    std::string escapedPrompt = utf8Prompt;
     
-    // 转义特殊字符以确保生成有效的JSON格式
-    // 注意转义顺序非常重要：
-    // 1. 首先转义反斜杠，因为它是转义字符
-    // 2. 然后转义双引号，因为它们用于字符串界定
-    // 3. 最后处理其他特殊字符
-    
-    // 转义反斜杠
+    // Escape special characters in prompt for JSON in correct order
+    // First escape backslashes
     size_t pos = 0;
     while ((pos = escapedPrompt.find("\\", pos)) != std::string::npos) {
         escapedPrompt.replace(pos, 1, "\\\\");
         pos += 2;
     }
     
-    // 转义双引号
+    // Then escape double quotes
     pos = 0;
     while ((pos = escapedPrompt.find("\"", pos)) != std::string::npos) {
         escapedPrompt.replace(pos, 1, "\\\"");
         pos += 2;
     }
     
-    // 转义换行符
+    // Replace newlines with \n escape sequence
     pos = 0;
     while ((pos = escapedPrompt.find("\n", pos)) != std::string::npos) {
         escapedPrompt.replace(pos, 1, "\\n");
         pos += 2;
     }
     
-    // 转义回车符
+    // Replace carriage returns with \r escape sequence
     pos = 0;
     while ((pos = escapedPrompt.find("\r", pos)) != std::string::npos) {
         escapedPrompt.replace(pos, 1, "\\r");
         pos += 2;
     }
     
-    // 转义制表符
+    // Replace tabs with \t escape sequence
     pos = 0;
     while ((pos = escapedPrompt.find("\t", pos)) != std::string::npos) {
         escapedPrompt.replace(pos, 1, "\\t");
         pos += 2;
     }
     
-    // 构建JSON请求体
-    std::string body;
+    std::string body = "{";
     
-    // 开始根对象
-    body += "{";
-    
-    // 添加模型信息
+    // Add model
     body += "\"model\": \"qwen-vl-max\",";
     
-    // 开始输入对象
+    // Add input object
     body += "\"input\": {";
     
-    // 开始消息数组
+    // Add messages array
     body += "\"messages\": [";
     
-    // 添加用户消息
+    // Add user message
     body += "{";
     body += "\"role\": \"user\",";
     body += "\"content\": [";
     
-    // 添加每个图像内容
+    // Add image content for each image
     for (size_t i = 0; i < base64Images.size(); ++i) {
         if (i > 0) body += ",";
         body += "{";
@@ -186,28 +181,24 @@ std::string QwenAPI::constructRequestBody(const std::vector<std::string>& base64
         body += "}";
     }
     
-    // 添加文本内容
+    // Add text content
     if (!base64Images.empty()) body += ",";
     body += "{";
     body += "\"text\": \"" + escapedPrompt + "\"";
     body += "}";
     
-    // 结束content数组和消息对象
-    body += "]}";
+    body += "]"; // Close content array
+    body += "}"; // Close message object
     
-    // 结束messages数组
-    body += "]";
+    body += "]"; // Close messages array
+    body += "}"; // Close input object
     
-    // 结束input对象
-    body += "}";
-    
-    // 添加参数
+    // Add parameters
     body += ",\"parameters\": {";
     body += "\"max_tokens\": 1024";
     body += "}";
     
-    // 结束根对象
-    body += "}";
+    body += "}"; // Close root object
     
     return body;
 }
