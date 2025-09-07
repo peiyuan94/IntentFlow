@@ -35,13 +35,19 @@ public:
     APIResponse sendImageQuery(const std::string& imagePath, const std::string& prompt);
     APIResponse sendImageQuery(const std::vector<std::string>& imagePaths, const std::string& prompt);
     
-    // 新增设置API密钥的方法
+    // Add API key setting method
     void setApiKey(const std::string& apiKey) { config_.apiKey = apiKey; }
     std::string getApiKey() const { return config_.apiKey; }
 
     // Utility functions
     static std::string encodeImageToBase64(const std::string& imagePath);
     static bool validateApiKey(const std::string& apiKey);
+    
+    // Character encoding conversion functions
+    static std::string UnicodeToUTF8(const std::wstring& wstr);
+    static std::wstring UTF8ToUnicode(const std::string& str);
+    static std::string UnicodeToANSI(const std::wstring& wstr);
+    static std::wstring ANSIToUnicode(const std::string& str);
 
 private:
     APIConfig config_;

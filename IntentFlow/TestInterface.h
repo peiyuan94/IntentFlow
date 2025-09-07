@@ -43,7 +43,7 @@ public:
 
     // Constructor
     explicit TestInterface(std::shared_ptr<QwenAPI> qwenAPI);
-    void Initialize(); // 添加初始化方法
+    void Initialize(); // Add initialization method
 
     // Main function interfaces
     TestResult executeGroundingTest(const std::string& imagePath, const std::string& question);

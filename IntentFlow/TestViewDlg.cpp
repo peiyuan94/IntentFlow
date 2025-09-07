@@ -1,10 +1,14 @@
+// TestViewDlg.cpp: Implementation file
+//
+
 #include "pch.h"
-#include "afxdialogex.h"
+#include "framework.h"
 #include "IntentFlow.h"
-
 #include "TestViewDlg.h"
+#include "afxdialogex.h"
 
-// CTestViewDlg 对话框
+
+// CTestViewDlg dialog
 
 IMPLEMENT_DYNAMIC(CTestViewDlg, CDialogEx)
 
@@ -16,7 +20,7 @@ CTestViewDlg::CTestViewDlg(CWnd* pParent /*=nullptr*/)
 	, m_strResult(_T(""))
 	, m_nTaskType(0)
 {
-	// 初始化智能指针
+	// Initialize smart pointers
 	m_qwenAPI = std::make_shared<QwenAPI>();
 	m_testInterface = std::make_shared<TestInterface>(m_qwenAPI);
 }
@@ -51,19 +55,19 @@ BEGIN_MESSAGE_MAP(CTestViewDlg, CDialogEx)
 	ON_CBN_SELCHANGE(IDC_COMBO_TASK_TYPE, &CTestViewDlg::OnCbnSelchangeComboTaskType)
 END_MESSAGE_MAP()
 
-// CTestViewDlg 消息处理程序
+// CTestViewDlg message handlers
 
 BOOL CTestViewDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	// 初始化任务类型组合框
+	// Initialize task type combo box
 	m_comboTaskType.AddString(_T("GUI Grounding"));
 	m_comboTaskType.AddString(_T("GUI Referring"));
 	m_comboTaskType.AddString(_T("GUI VQA"));
 	m_comboTaskType.SetCurSel(0);
 
-	// 初始化测试接口
+	// Initialize test interface
 	m_testInterface->Initialize();
 
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -71,12 +75,11 @@ BOOL CTestViewDlg::OnInitDialog()
 
 void CTestViewDlg::OnBnClickedBtnLoadImage()
 {
-	// 更新数据到变量
+	// Update data to variables
 	UpdateData(TRUE);
 
-	// 创建文件打开对话框
-	CFileDialog fileDlg(TRUE, _T("png"), NULL, 
-		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY,
+	// Create file open dialog
+	CFileDialog fileDlg(TRUE, _T("png"), NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY,
 		_T("Image Files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp|All Files (*.*)|*.*||"));
 
 	if (fileDlg.DoModal() == IDOK)
@@ -88,27 +91,27 @@ void CTestViewDlg::OnBnClickedBtnLoadImage()
 
 void CTestViewDlg::OnBnClickedBtnRunTest()
 {
-	// 更新数据到变量
+	// Update data to variables
 	UpdateData(TRUE);
 
-	// 检查图像路径
+	// Check image path
 	if (m_strImagePath.IsEmpty())
 	{
 		AfxMessageBox(_T("Please select an image first!"));
 		return;
 	}
 
-	// 检查问题输入
+	// Check question input
 	if (m_strQuestion.IsEmpty())
 	{
 		AfxMessageBox(_T("Please enter a question or coordinates!"));
 		return;
 	}
 
-	// 设置API密钥
+	// Set API key
 	m_qwenAPI->setApiKey(CStringA(m_strAPIKey).GetString());
 
-	// 执行测试
+	// Execute test
 	TestInterface::TestResult result;
 	
 	switch (m_nTaskType)
@@ -118,7 +121,7 @@ void CTestViewDlg::OnBnClickedBtnRunTest()
 		break;
 	case 1: // GUI Referring
 		{
-			// 解析坐标格式 "x,y"
+			// Parse coordinate format "x,y"
 			int commaPos = m_strQuestion.Find(_T(','));
 			if (commaPos == -1)
 			{
@@ -143,48 +146,58 @@ void CTestViewDlg::OnBnClickedBtnRunTest()
 		return;
 	}
 
-	// 显示结果
+	// Display result
 	if (result.success)
 	{
-		m_strResult = CString(result.output.c_str());
+		// Use UTF-8 to Unicode conversion to ensure Chinese display correctly
+		std::string utf8Result = result.output;
+		std::wstring unicodeResult = QwenAPI::UTF8ToUnicode(utf8Result);
+		m_strResult = unicodeResult.c_str();
 	}
 	else
 	{
-		m_strResult = CString(result.errorMessage.c_str());
+		// Error message also needs correct conversion
+		std::string utf8Error = result.errorMessage;
+		std::wstring unicodeError = QwenAPI::UTF8ToUnicode(utf8Error);
+		m_strResult = unicodeError.c_str();
 	}
 
-	// 更新数据显示
+	// Update data display
 	UpdateData(FALSE);
 }
 
 void CTestViewDlg::OnBnClickedBtnExport()
 {
-	// 更新数据到变量
+	// Update data to variables
 	UpdateData(TRUE);
 
-	// 检查是否有结果可导出
+	// Check if there is result to export
 	if (m_strResult.IsEmpty())
 	{
 		AfxMessageBox(_T("No result to export!"));
 		return;
 	}
 
-	// 创建文件保存对话框
-	CFileDialog fileDlg(FALSE, _T("txt"), _T("result.txt"), 
-		OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+	// Create file save dialog
+	CFileDialog fileDlg(FALSE, _T("txt"), _T("result.txt"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		_T("Text Files (*.txt)|*.txt|All Files (*.*)|*.*||"));
 
 	if (fileDlg.DoModal() == IDOK)
 	{
 		CString filePath = fileDlg.GetPathName();
 		
-		// 写入结果到文件
+		// Write result to file, ensure using UTF-8 encoding
 		CFile file;
 		if (file.Open(filePath, CFile::modeCreate | CFile::modeWrite))
 		{
-			CArchive ar(&file, CArchive::store);
-			ar << m_strResult;
-			ar.Close();
+			// Add UTF-8 BOM
+			BYTE utf8Bom[] = { 0xEF, 0xBB, 0xBF };
+			file.Write(utf8Bom, 3);
+			
+			// Convert Unicode to UTF-8 then write to file
+			CStringW unicodeStr(m_strResult);
+			std::string utf8Str = QwenAPI::UnicodeToUTF8(std::wstring(unicodeStr));
+			file.Write(utf8Str.c_str(), static_cast<UINT>(utf8Str.length()));
 			file.Close();
 			
 			AfxMessageBox(_T("Result exported successfully!"));
@@ -198,10 +211,10 @@ void CTestViewDlg::OnBnClickedBtnExport()
 
 void CTestViewDlg::OnCbnSelchangeComboTaskType()
 {
-	// 更新数据到变量
+	// Update data to variables
 	UpdateData(TRUE);
 	
-	// 根据任务类型更新界面提示
+	// Update interface prompt based on task type
 	switch (m_nTaskType)
 	{
 	case 0: // GUI Grounding

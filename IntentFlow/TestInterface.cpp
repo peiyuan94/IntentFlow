@@ -16,7 +16,7 @@ TestInterface::TestInterface(std::shared_ptr<QwenAPI> qwenAPI)
 }
 
 void TestInterface::Initialize() {
-    // 初始化操作（如果需要）
+    // Initialization operations (if needed)
     statistics_ = {0, 0, 0, 0.0, 0.0};
 }
 
@@ -55,42 +55,72 @@ TestInterface::TestResult TestInterface::executeTest(const std::string& imagePat
         statistics_.failedTests++;
     }
     
-    // Update success rate
-    statistics_.successRate = static_cast<double>(statistics_.successfulTests) / statistics_.totalTests;
+    // Calculate success rate
+    statistics_.successRate = static_cast<double>(statistics_.successfulTests) / statistics_.totalTests * 100;
     
     return result;
 }
 
 std::string TestInterface::buildGroundingPrompt(const std::string& question) {
-    return "Please locate the relevant control in the image based on the following question, and answer in the format 'Coordinates: (x1, y1, x2, y2)', where (x1, y1) is the top-left coordinate of the control and (x2, y2) is the bottom-right coordinate. Question: " + question;
+    // Ensure Chinese questions are handled correctly
+    std::wstring unicodeQuestion = QwenAPI::UTF8ToUnicode(question);
+    std::string utf8Prompt = R"({
+        "role": "user",
+        "content": [
+            {
+                "image": "IMAGE_PLACEHOLDER"
+            },
+            {
+                "text": "Please provide the bounding box coordinates for the UI element mentioned in the question: )" + question + R"("
+            }
+        ]
+    })";
+    return utf8Prompt;
 }
 
 std::string TestInterface::buildReferringPrompt(int x, int y) {
-    std::ostringstream oss;
-    oss << "Please describe the function or displayed text content of the control at coordinate (" << x << ", " << y << ") in the image.";
-    return oss.str();
+    std::string utf8Prompt = R"({
+        "role": "user",
+        "content": [
+            {
+                "image": "IMAGE_PLACEHOLDER"
+            },
+            {
+                "text": "What UI element is located at coordinates ()" + std::to_string(x) + ", " + std::to_string(y) + R"()? Please describe its function."
+            }
+        ]
+    })";
+    return utf8Prompt;
 }
 
 std::string TestInterface::buildVQAPrompt(const std::string& question) {
-    return "Please answer the following question based on the image content. If the answer involves a specific control, please also provide the control coordinate information: " + question;
+    // Ensure Chinese questions are handled correctly
+    std::wstring unicodeQuestion = QwenAPI::UTF8ToUnicode(question);
+    std::string utf8Prompt = R"({
+        "role": "user",
+        "content": [
+            {
+                "image": "IMAGE_PLACEHOLDER"
+            },
+            {
+                "text": "Answer the following question about the UI: )" + question + R"("
+            }
+        ]
+    })";
+    return utf8Prompt;
 }
 
-TestInterface::TestResult TestInterface::executeGroundingTest(const std::string& imagePath, 
-                                                             const std::string& question) {
+TestInterface::TestResult TestInterface::executeGroundingTest(const std::string& imagePath, const std::string& question) {
     std::string prompt = buildGroundingPrompt(question);
     return executeTest(imagePath, prompt, TaskType::GUI_GROUNDING, question);
 }
 
-TestInterface::TestResult TestInterface::executeReferringTest(const std::string& imagePath, 
-                                                             int x, int y) {
+TestInterface::TestResult TestInterface::executeReferringTest(const std::string& imagePath, int x, int y) {
     std::string prompt = buildReferringPrompt(x, y);
-    std::ostringstream input;
-    input << "(" << x << ", " << y << ")";
-    return executeTest(imagePath, prompt, TaskType::GUI_REFERRING, input.str());
+    return executeTest(imagePath, prompt, TaskType::GUI_REFERRING, std::to_string(x) + "," + std::to_string(y));
 }
 
-TestInterface::TestResult TestInterface::executeVQATest(const std::string& imagePath, 
-                                                        const std::string& question) {
+TestInterface::TestResult TestInterface::executeVQATest(const std::string& imagePath, const std::string& question) {
     std::string prompt = buildVQAPrompt(question);
     return executeTest(imagePath, prompt, TaskType::GUI_VQA, question);
 }
