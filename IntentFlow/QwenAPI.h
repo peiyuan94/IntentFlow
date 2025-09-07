@@ -34,6 +34,10 @@ public:
     // Main interface functions
     APIResponse sendImageQuery(const std::string& imagePath, const std::string& prompt);
     APIResponse sendImageQuery(const std::vector<std::string>& imagePaths, const std::string& prompt);
+    
+    // 新增设置API密钥的方法
+    void setApiKey(const std::string& apiKey) { config_.apiKey = apiKey; }
+    std::string getApiKey() const { return config_.apiKey; }
 
     // Utility functions
     static std::string encodeImageToBase64(const std::string& imagePath);

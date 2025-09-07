@@ -160,6 +160,6 @@ HCURSOR CIntentFlowDlg::OnQueryDragIcon()
 void CIntentFlowDlg::OnBnClickedBtnOpenTestView()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	//CTestViewDlg testViewDlg(this);
-	//testViewDlg.DoModal();
+	CTestViewDlg testViewDlg(this);
+	testViewDlg.DoModal();
 }

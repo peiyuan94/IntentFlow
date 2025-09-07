@@ -15,6 +15,11 @@ TestInterface::TestInterface(std::shared_ptr<QwenAPI> qwenAPI)
     statistics_ = {0, 0, 0, 0.0, 0.0};
 }
 
+void TestInterface::Initialize() {
+    // 初始化操作（如果需要）
+    statistics_ = {0, 0, 0, 0.0, 0.0};
+}
+
 TestInterface::TestResult TestInterface::executeTest(const std::string& imagePath, 
                                                     const std::string& prompt, 
                                                     TaskType taskType, 
