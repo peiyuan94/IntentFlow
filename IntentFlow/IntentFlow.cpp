@@ -1,13 +1,11 @@
+﻿
+// IntentFlow.cpp: 定义应用程序的类行为。
+//
+
 #include "pch.h"
 #include "framework.h"
-#include "afxwinappex.h"
-#include "afxdialogex.h"
 #include "IntentFlow.h"
-#include "MainFrm.h"
-
-#include "ChildFrm.h"
-#include "IntentFlowDoc.h"
-#include "IntentFlowView.h"
+#include "IntentFlowDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -16,190 +14,100 @@
 
 // CIntentFlowApp
 
-BEGIN_MESSAGE_MAP(CIntentFlowApp, CWinAppEx)
-	ON_COMMAND(ID_APP_ABOUT, &CIntentFlowApp::OnAppAbout)
-	// Standard document commands based on files
-	ON_COMMAND(ID_FILE_NEW, &CWinAppEx::OnFileNew)
-	ON_COMMAND(ID_FILE_OPEN, &CWinAppEx::OnFileOpen)
+BEGIN_MESSAGE_MAP(CIntentFlowApp, CWinApp)
+	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
 
-// CIntentFlowApp construction
+// CIntentFlowApp 构造
 
-CIntentFlowApp::CIntentFlowApp() noexcept
+CIntentFlowApp::CIntentFlowApp()
 {
+	// 支持重新启动管理器
+	m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_RESTART;
 
-	m_nAppLook = 0;
-	// Support Restart Manager
-	m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_ALL_ASPECTS;
-#ifdef _MANAGED
-	// If the application is built with Common Language Runtime support (/clr): 
-	//     1) This additional setting is required for Restart Manager support to work properly.
-	//     2) In your project, you must add a reference to System.Windows.Forms in order to build your project.
-	System::Windows::Forms::Application::SetUnhandledExceptionMode(System::Windows::Forms::UnhandledExceptionMode::ThrowException);
-#endif
-
-	// TODO: Replace the following application ID string with your own unique ID string; 
-	// recommended format for string is CompanyName.ProductName.SubProduct.VersionInformation
-	SetAppID(_T("IntentFlow.AppID.NoVersion"));
-
-	// TODO: Add construction code here,
-	// Place all significant initialization in InitInstance
+	// TODO: 在此处添加构造代码，
+	// 将所有重要的初始化放置在 InitInstance 中
 }
 
-// The one and only CIntentFlowApp object
+
+// 唯一的 CIntentFlowApp 对象
 
 CIntentFlowApp theApp;
 
 
-// CIntentFlowApp initialization
+// CIntentFlowApp 初始化
 
 BOOL CIntentFlowApp::InitInstance()
 {
-	CWinAppEx::InitInstance();
+	// 如果应用程序存在以下情况，Windows XP 上需要 InitCommonControlsEx()
+	// 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，
+	//则需要 InitCommonControlsEx()。  否则，将无法创建窗口。
+	INITCOMMONCONTROLSEX InitCtrls;
+	InitCtrls.dwSize = sizeof(InitCtrls);
+	// 将它设置为包括所有要在应用程序中使用的
+	// 公共控件类。
+	InitCtrls.dwICC = ICC_WIN95_CLASSES;
+	InitCommonControlsEx(&InitCtrls);
 
+	CWinApp::InitInstance();
 
-	// Initialize OLE libraries
-	if (!AfxOleInit())
+	if (!AfxSocketInit())
 	{
-		AfxMessageBox(IDP_OLE_INIT_FAILED);
+		AfxMessageBox(IDP_SOCKETS_INIT_FAILED);
 		return FALSE;
 	}
+
 
 	AfxEnableControlContainer();
 
-	EnableTaskbarInteraction();
+	// 创建 shell 管理器，以防对话框包含
+	// 任何 shell 树视图控件或 shell 列表视图控件。
+	CShellManager *pShellManager = new CShellManager;
 
-	// Use RichEdit control	Need to include afxrich.h
-	// AfxInitRichEdit2();
+	// 激活“Windows Native”视觉管理器，以便在 MFC 控件中启用主题
+	CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerWindows));
 
-	// Standard initialization
-	// If you are not using these features and wish to reduce the final executable size,
-	// you should remove from the following
-	// the specific initialization routines you do not need
-	// Change the registry key under which our settings are stored
-	// TODO: You should modify this string to be something appropriate
-	// such as your company or organization name
-	SetRegistryKey(_T("Application Wizard Generated Local Application"));
-	LoadStdProfileSettings(4);  // Load standard INI file options (including MRU)
+	// 标准初始化
+	// 如果未使用这些功能并希望减小
+	// 最终可执行文件的大小，则应移除下列
+	// 不需要的特定初始化例程
+	// 更改用于存储设置的注册表项
+	// TODO: 应适当修改该字符串，
+	// 例如修改为公司或组织名
+	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
 
-
-	InitContextMenuManager();
-
-	InitKeyboardManager();
-
-	InitTooltipManager();
-	CMFCToolTipInfo ttParams;
-	ttParams.m_bVislManagerTheme = TRUE;
-	theApp.GetTooltipManager()->SetTooltipParams(AFX_TOOLTIP_TYPE_ALL,
-		RUNTIME_CLASS(CMFCToolTipCtrl), &ttParams);
-
-	// Register the application's document templates.  Document templates
-	// serve as the connection between documents, frame windows and views
-	CMultiDocTemplate* pDocTemplate;
-	pDocTemplate = new CMultiDocTemplate(IDR_IntentFlowTYPE,
-		RUNTIME_CLASS(CIntentFlowDoc),
-		RUNTIME_CLASS(CChildFrame), // custom MDI child frame
-		RUNTIME_CLASS(CIntentFlowView));
-	if (!pDocTemplate)
-		return FALSE;
-	AddDocTemplate(pDocTemplate);
-	
-	// Save the document template pointer
-	m_pDocTemplate = pDocTemplate;
-
-	// Create main MDI Frame window
-	CMainFrame* pMainFrame = new CMainFrame;
-	if (!pMainFrame || !pMainFrame->LoadFrame(IDR_MAINFRAME))
+	CIntentFlowDlg dlg;
+	m_pMainWnd = &dlg;
+	INT_PTR nResponse = dlg.DoModal();
+	if (nResponse == IDOK)
 	{
-		delete pMainFrame;
-		return FALSE;
+		// TODO: 在此放置处理何时用
+		//  “确定”来关闭对话框的代码
 	}
-	m_pMainWnd = pMainFrame;
+	else if (nResponse == IDCANCEL)
+	{
+		// TODO: 在此放置处理何时用
+		//  “取消”来关闭对话框的代码
+	}
+	else if (nResponse == -1)
+	{
+		TRACE(traceAppMsg, 0, "警告: 对话框创建失败，应用程序将意外终止。\n");
+		TRACE(traceAppMsg, 0, "警告: 如果您在对话框上使用 MFC 控件，则无法 #define _AFX_NO_MFC_CONTROLS_IN_DIALOGS。\n");
+	}
 
+	// 删除上面创建的 shell 管理器。
+	if (pShellManager != nullptr)
+	{
+		delete pShellManager;
+	}
 
-	// Parse command line for standard shell commands, DDE, file open
-	CCommandLineInfo cmdInfo;
-	ParseCommandLine(cmdInfo);
-
-
-
-	// Dispatch commands specified on the command line.  Will return FALSE if
-	// app was launched with /RegServer, /Register, /Unregserver or /Unregister.
-	if (!ProcessShellCommand(cmdInfo))
-		return FALSE;
-	// The main window has been initialized, so show and update it
-	pMainFrame->ShowWindow(m_nCmdShow);
-	pMainFrame->UpdateWindow();
-
-	return TRUE;
-}
-
-int CIntentFlowApp::ExitInstance()
-{
-	//TODO: Handle additional resources you may have added
-	AfxOleTerm(FALSE);
-
-	return CWinAppEx::ExitInstance();
-}
-
-// CIntentFlowApp message handlers
-
-
-// Used to display the "About" dialog box
-
-class CAboutDlg : public CDialogEx
-{
-public:
-	CAboutDlg() noexcept;
-
-// Dialog Data
-#ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_ABOUTBOX };
+#if !defined(_AFXDLL) && !defined(_AFX_NO_MFC_CONTROLS_IN_DIALOGS)
+	ControlBarCleanUp();
 #endif
 
-protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-
-// Implementation
-protected:
-	DECLARE_MESSAGE_MAP()
-};
-
-CAboutDlg::CAboutDlg() noexcept : CDialogEx(IDD_ABOUTBOX)
-{
+	// 由于对话框已关闭，所以将返回 FALSE 以便退出应用程序，
+	//  而不是启动应用程序的消息泵。
+	return FALSE;
 }
 
-void CAboutDlg::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-}
-
-BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
-END_MESSAGE_MAP()
-
-// App command to run the dialog
-void CIntentFlowApp::OnAppAbout()
-{
-	CAboutDlg aboutDlg;
-	aboutDlg.DoModal();
-}
-
-// CIntentFlowApp customization load/save methods
-
-void CIntentFlowApp::PreLoadState()
-{
-	BOOL bNameValid;
-	CString strName;
-	bNameValid = strName.LoadString(IDS_EDIT_MENU);
-	ASSERT(bNameValid);
-	GetContextMenuManager()->AddMenu(strName, IDR_POPUP_EDIT);
-}
-
-void CIntentFlowApp::LoadCustomState()
-{
-}
-
-void CIntentFlowApp::SaveCustomState()
-{
-}
