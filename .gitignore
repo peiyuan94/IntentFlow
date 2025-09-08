@@ -50,7 +50,6 @@ x86/
 *.aps
 *.ncb
 *.opendb
-*.rc2
 
 # C++ Specific
 *.o
