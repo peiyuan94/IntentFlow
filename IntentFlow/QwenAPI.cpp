@@ -24,7 +24,7 @@ QwenAPI::APIResponse QwenAPI::sendImageQuery(const std::string& imagePath, const
 
 QwenAPI::APIResponse QwenAPI::sendImageQuery(const std::vector<std::string>& imagePaths, const std::string& prompt) {
     return executeWithRetry([&]() -> APIResponse {
-        // Encode images to Base64
+        // 图片转换为Base64编码
         std::vector<std::string> base64Images;
         for (const auto& imagePath : imagePaths) {
             std::string base64Image = encodeImageToBase64(imagePath);
@@ -34,13 +34,13 @@ QwenAPI::APIResponse QwenAPI::sendImageQuery(const std::vector<std::string>& ima
             base64Images.push_back(base64Image);
         }
 
-        // Construct request body
+        // 构造请求体
         std::string requestBody = constructRequestBody(base64Images, prompt);
         if (requestBody.empty()) {
             return APIResponse{ false, "", "Failed to construct request body", -1 };
         }
 
-        // Send HTTP request
+        // 发送HTTP请求
         return sendHttpRequest(requestBody);
         });
 }
@@ -60,7 +60,7 @@ std::string QwenAPI::encodeImageToBase64(const std::string& imagePath) {
         return "";
     }
 
-    // Convert to Base64 encoding
+    // 转换成Base64编码
     static const char* base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz"

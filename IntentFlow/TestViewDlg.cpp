@@ -40,7 +40,6 @@ void CTestViewDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BTN_RUN_TEST, m_btnRunTest);
 	DDX_Control(pDX, IDC_BTN_EXPORT, m_btnExport);
 	DDX_Control(pDX, IDC_COMBO_TASK_TYPE, m_comboTaskType);
-	DDX_Control(pDX, IDC_STATIC_IMAGE_PREVIEW, m_staticImagePreview);
 	DDX_Text(pDX, IDC_EDIT_API_KEY, m_strAPIKey);
 	DDX_Text(pDX, IDC_EDIT_IMAGE_PATH, m_strImagePath);
 	DDX_Text(pDX, IDC_EDIT_QUESTION, m_strQuestion);

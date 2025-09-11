@@ -9,6 +9,7 @@ x86/
 [Bb]uild*/
 [Cc]ache/
 [Ll]ogs/
+[Tt]est/
 
 # Visual Studio 2022 files
 *.sdf

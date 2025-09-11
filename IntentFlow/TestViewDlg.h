@@ -32,7 +32,6 @@ private:
 	CButton m_btnRunTest;
 	CButton m_btnExport;
 	CComboBox m_comboTaskType;
-	CStatic m_staticImagePreview;
 
 	// Function variables
 	std::shared_ptr<QwenAPI> m_qwenAPI;

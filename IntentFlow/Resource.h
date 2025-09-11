@@ -13,13 +13,11 @@
 #define IDC_BUTTON_SELECT_IMAGE         1001
 #define IDC_EDIT_IMAGE_PATH             1002
 #define IDC_BTN_LOAD_IMAGE              1003
-#define IDC_STATIC_IMAGE_PREVIEW        1004
 #define IDC_COMBO_TASK_TYPE             1005
 #define IDC_EDIT_QUESTION               1006
 #define IDC_BTN_RUN_TEST                1007
 #define IDC_EDIT_RESULT                 1008
 #define IDC_BTN_EXPORT                  1009
-#define IDC_BUTTON1                     1010
 #define IDC_BTN_OPEN_TEST_VIEW          1010
 
 // Next default values for new objects
