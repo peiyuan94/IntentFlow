@@ -169,24 +169,15 @@ std::string QwenAPI::scaleImage(const std::string& imagePath) {
         
         std::wcout << L"[scaleImage] Original image size: " << originalWidth << L"x" << originalHeight << L" for image: " << widePath << std::endl;
         
-        // Target dimensions (540x960)
-        const int targetWidth = 540;
+        // Target dimensions (960x960) - fixed size, not maintaining aspect ratio
+        const int targetWidth = 960;
         const int targetHeight = 960;
         
-        // Calculate scale factor to maintain aspect ratio
-        float scaleX = (float)targetWidth / originalWidth;
-        float scaleY = (float)targetHeight / originalHeight;
-        float scale = std::min<float>(scaleX, scaleY);
+        std::wcout << L"[scaleImage] Target image size: " << targetWidth << L"x" << targetHeight << L" for image: " << widePath << std::endl;
         
-        // Calculate new dimensions
-        int newWidth = static_cast<int>(originalWidth * scale);
-        int newHeight = static_cast<int>(originalHeight * scale);
-        
-        std::wcout << L"[scaleImage] Scaled image size: " << newWidth << L"x" << newHeight << L" for image: " << widePath << std::endl;
-        
-        // Resize the image using high quality interpolation
+        // Resize the image to exact dimensions using high quality interpolation
         cv::Mat resizedImage;
-        cv::resize(image, resizedImage, cv::Size(newWidth, newHeight), 0, 0, cv::INTER_LANCZOS4);
+        cv::resize(image, resizedImage, cv::Size(targetWidth, targetHeight), 0, 0, cv::INTER_LANCZOS4);
         
         // Encode the resized image as JPEG in memory
         std::vector<uchar> buffer;
