@@ -15,6 +15,15 @@
 #include <ctime>
 #include <locale>
 #include <codecvt>
+#include <opencv2/opencv.hpp>
+#include "QwenAPI.h"
+
+// Function declarations
+std::wstring ANSIToUnicode(const std::string& str);
+std::string UnicodeToUTF8(const std::wstring& wstr);
+
+// Function to scale coordinates based on image resizing
+std::string scaleCoordinatesInQuestion(const std::string& question, const std::string& imagePath);
 
 // Add log file stream
 static std::ofstream logFile;
@@ -291,7 +300,9 @@ std::string GUITaskProcessor::processGUITask(const std::string& taskType,
     if (taskType == "gui_grounding") {
         prompt = buildPromptForGrounding(question);
     } else if (taskType == "gui_referring") {
-        prompt = buildPromptForReferring(question);
+        // For GUI Referring, we need to scale the coordinates in the question
+        std::string scaledQuestion = scaleCoordinatesInQuestion(question, imagePath);
+        prompt = buildPromptForReferring(scaledQuestion);
     } else if (taskType == "advanced_vqa") {
         prompt = buildPromptForVQA(question);
     }
@@ -336,10 +347,12 @@ std::string GUITaskProcessor::buildPromptForGrounding(const std::string& questio
 }
 
 std::string GUITaskProcessor::buildPromptForReferring(const std::string& question) {
-    std::string prompt = "You are an expert in GUI understanding. ";
-    prompt += "Please describe the function or content of the UI component within the specified coordinates. ";
+    // For GUI Referring, the question contains a coordinate box like [x1,y1,x2,y2]
+    // We need to ask the model to describe what's in that box
+    std::string prompt = "You are an expert in mobile app GUI understanding. ";
+    prompt += "Please identify and describe the UI component at the specified location. ";
     prompt += "The question is: \"" + question + "\". ";
-    prompt += "Return only the description in text, nothing else.";
+    prompt += "Return only a brief textual description of the component's function or content, nothing else.";
     return prompt;
 }
 
@@ -455,7 +468,52 @@ std::string GUITaskProcessor::parseResultForGrounding(const std::string& respons
 }
 
 std::string GUITaskProcessor::parseResultForReferring(const std::string& response) {
-    // For Referring tasks, return the response text directly
+    WriteLog(L"[parseResultForReferring] Processing response");
+    WriteLog(L"[parseResultForReferring] Response content: " + std::wstring(response.begin(), response.end()));
+    
+    // For Referring tasks, we need to extract the description from the API response
+    // The response format example: {"output":{"choices":[{"message":{"content":[{"text":"点击转发帖子"}],"role":"assistant"},"finish_reason":"stop"}]}}
+    
+    // Find the content field
+    size_t contentPos = response.find("\"content\"");
+    if (contentPos != std::string::npos) {
+        WriteLog(L"[parseResultForReferring] Found content field at position: " + std::to_wstring(contentPos));
+        
+        // Find the text field within content
+        size_t textPos = response.find("\"text\"", contentPos);
+        if (textPos != std::string::npos) {
+            WriteLog(L"[parseResultForReferring] Found text field at position: " + std::to_wstring(textPos));
+            
+            // Find the start of the value (skip "text":)
+            size_t valueStart = response.find("\"", textPos + 7);
+            if (valueStart != std::string::npos) {
+                valueStart++; // Skip the first quote
+                WriteLog(L"[parseResultForReferring] Value start position: " + std::to_wstring(valueStart));
+                
+                // Find the end of the value
+                size_t valueEnd = response.find("\"", valueStart);
+                if (valueEnd != std::string::npos) {
+                    WriteLog(L"[parseResultForReferring] Value end position: " + std::to_wstring(valueEnd));
+                    
+                    // Extract the content text
+                    std::string contentText = response.substr(valueStart, valueEnd - valueStart);
+                    WriteLog(L"[parseResultForReferring] Extracted content text: " + std::wstring(contentText.begin(), contentText.end()));
+                    return contentText;
+                } else {
+                    WriteLog(L"[parseResultForReferring] Could not find end quote for value");
+                }
+            } else {
+                WriteLog(L"[parseResultForReferring] Could not find start quote for value");
+            }
+        } else {
+            WriteLog(L"[parseResultForReferring] Could not find text field");
+        }
+    } else {
+        WriteLog(L"[parseResultForReferring] Could not find content field");
+    }
+    
+    // If the above method fails, return the whole response as is
+    WriteLog(L"[parseResultForReferring] Returning response as is");
     return response;
 }
 
@@ -604,4 +662,156 @@ bool GUITaskProcessor::saveResults(const std::string& outputPath, const Json::Va
     std::wcout << L"[GUITaskProcessor] Saved " << lines.size() << L" results" << std::endl;
     WriteLog(L"[GUITaskProcessor] Saved " + std::to_wstring(lines.size()) + L" results");
     return true;
+}
+
+// Helper functions for string conversion
+std::wstring ANSIToUnicode(const std::string& str) {
+    if (str.empty()) return std::wstring();
+    int size_needed = MultiByteToWideChar(CP_ACP, 0, &str[0], (int)str.size(), NULL, 0);
+    std::wstring wstrTo(size_needed, 0);
+    MultiByteToWideChar(CP_ACP, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+    return wstrTo;
+}
+
+std::string UnicodeToUTF8(const std::wstring& wstr) {
+    if (wstr.empty()) return std::string();
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+    std::string strTo(size_needed, 0);
+    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+    return strTo;
+}
+
+// Function to get image dimensions
+std::pair<int, int> getImageDimensions(const std::string& imagePath) {
+    // Convert imagePath to wide string for OpenCV
+    std::wstring widePath = ANSIToUnicode(imagePath);
+    
+    // Load the image
+    cv::Mat image = cv::imread(UnicodeToUTF8(widePath), cv::IMREAD_COLOR);
+    if (image.empty()) {
+        WriteLog(L"[getImageDimensions] Failed to load image: " + widePath);
+        return std::make_pair(0, 0);
+    }
+    
+    // Return width and height
+    return std::make_pair(image.cols, image.rows);
+}
+
+// Function to scale coordinates based on image resizing
+std::string scaleCoordinatesInQuestion(const std::string& question, const std::string& imagePath) {
+    WriteLog(L"[scaleCoordinatesInQuestion] Processing question: " + std::wstring(question.begin(), question.end()));
+    WriteLog(L"[scaleCoordinatesInQuestion] Image path: " + std::wstring(imagePath.begin(), imagePath.end()));
+    
+    // Get image dimensions
+    std::pair<int, int> dimensions = getImageDimensions(imagePath);
+    int originalWidth = dimensions.first;
+    int originalHeight = dimensions.second;
+    
+    if (originalWidth <= 0 || originalHeight <= 0) {
+        WriteLog(L"[scaleCoordinatesInQuestion] Failed to get image dimensions");
+        return question;
+    }
+    
+    WriteLog(L"[scaleCoordinatesInQuestion] Original image size: " + 
+             std::to_wstring(originalWidth) + L"x" + std::to_wstring(originalHeight));
+    
+    // Target dimensions (960x960) - same as in QwenAPI::scaleImage, not maintaining aspect ratio
+    const int targetWidth = 960;
+    const int targetHeight = 960;
+    
+    // Calculate scale factors for each dimension separately (not maintaining aspect ratio)
+    float scaleX = (float)targetWidth / originalWidth;
+    float scaleY = (float)targetHeight / originalHeight;
+    
+    WriteLog(L"[scaleCoordinatesInQuestion] Scale factors - X: " + std::to_wstring(scaleX) + 
+             L", Y: " + std::to_wstring(scaleY));
+    
+    // Find coordinate pattern in question like ([x1,y1,x2,y2]) or ([x,y])
+    // Simple string parsing approach instead of regex
+    size_t parenOpenPos = question.find('(');
+    size_t parenClosePos = question.find(')', parenOpenPos);
+    
+    if (parenOpenPos != std::string::npos && parenClosePos != std::string::npos && parenClosePos > parenOpenPos) {
+        // Extract the content inside parentheses
+        std::string coordContent = question.substr(parenOpenPos + 1, parenClosePos - parenOpenPos - 1);
+        WriteLog(L"[scaleCoordinatesInQuestion] Coordinate content: " + std::wstring(coordContent.begin(), coordContent.end()));
+        
+        // Find the bracket coordinates inside the parentheses
+        size_t bracketOpenPos = coordContent.find('[');
+        size_t bracketClosePos = coordContent.find(']', bracketOpenPos);
+        
+        if (bracketOpenPos != std::string::npos && bracketClosePos != std::string::npos && bracketClosePos > bracketOpenPos) {
+            // Extract the coordinate values
+            std::string coordValues = coordContent.substr(bracketOpenPos + 1, bracketClosePos - bracketOpenPos - 1);
+            WriteLog(L"[scaleCoordinatesInQuestion] Coordinate values: " + std::wstring(coordValues.begin(), coordValues.end()));
+            
+            // Parse coordinate values
+            std::vector<std::string> coords;
+            size_t start = 0;
+            size_t commaPos = 0;
+            
+            // Split by comma
+            while ((commaPos = coordValues.find(',', start)) != std::string::npos) {
+                coords.push_back(coordValues.substr(start, commaPos - start));
+                start = commaPos + 1;
+            }
+            coords.push_back(coordValues.substr(start)); // Add the last value
+            
+            // Make sure we have valid coordinates (either 2 or 4 values)
+            if (coords.size() == 2 || coords.size() == 4) {
+                WriteLog(L"[scaleCoordinatesInQuestion] Found " + std::to_wstring(coords.size()) + L" coordinates");
+                
+                // Convert and scale coordinates
+                std::vector<int> scaledCoords;
+                for (size_t i = 0; i < coords.size(); ++i) {
+                    // Trim whitespace
+                    std::string trimmedCoord = coords[i];
+                    trimmedCoord.erase(0, trimmedCoord.find_first_not_of(" \t"));
+                    trimmedCoord.erase(trimmedCoord.find_last_not_of(" \t") + 1);
+                    
+                    try {
+                        int value = std::stoi(trimmedCoord);
+                        // Scale X coordinates with scaleX and Y coordinates with scaleY
+                        int scaledValue;
+                        if (i % 2 == 0) { // X coordinate (0, 2, ...)
+                            scaledValue = static_cast<int>(value * scaleX);
+                        } else { // Y coordinate (1, 3, ...)
+                            scaledValue = static_cast<int>(value * scaleY);
+                        }
+                        scaledCoords.push_back(scaledValue);
+                        WriteLog(L"[scaleCoordinatesInQuestion] Original: " + std::wstring(trimmedCoord.begin(), trimmedCoord.end()) + 
+                                 L", Scaled: " + std::to_wstring(scaledValue));
+                    } catch (const std::exception&) {
+                        WriteLog(L"[scaleCoordinatesInQuestion] Failed to parse coordinate: " + std::wstring(coords[i].begin(), coords[i].end()));
+                        return question; // Return original if parsing fails
+                    }
+                }
+                
+                // Build scaled coordinate string
+                std::string scaledCoordStr = "[";
+                for (size_t i = 0; i < scaledCoords.size(); ++i) {
+                    if (i > 0) scaledCoordStr += ",";
+                    scaledCoordStr += std::to_string(scaledCoords[i]);
+                }
+                scaledCoordStr += "]";
+                
+                WriteLog(L"[scaleCoordinatesInQuestion] Scaled coordinates string: " + std::wstring(scaledCoordStr.begin(), scaledCoordStr.end()));
+                
+                // Replace the coordinate part in the question
+                std::string scaledQuestion = question.substr(0, parenOpenPos + 1) + scaledCoordStr + 
+                                           question.substr(parenClosePos);
+                
+                WriteLog(L"[scaleCoordinatesInQuestion] Scaled question: " + std::wstring(scaledQuestion.begin(), scaledQuestion.end()));
+                return scaledQuestion;
+            } else {
+                WriteLog(L"[scaleCoordinatesInQuestion] Invalid number of coordinates: " + std::to_wstring(coords.size()));
+            }
+        } else {
+            WriteLog(L"[scaleCoordinatesInQuestion] No bracket coordinates found in parentheses");
+        }
+    } else {
+        WriteLog(L"[scaleCoordinatesInQuestion] No parentheses found in question");
+    }
+    
+    return question;
 }
