@@ -41,13 +41,16 @@ public:
 
     // Utility functions
     static std::string encodeImageToBase64(const std::string& imagePath);
+    static std::string scaleImage(const std::string& imagePath);
+    static std::string base64Encode(const std::string& data);
     static bool validateApiKey(const std::string& apiKey);
     
-    // Character encoding conversion functions
-    static std::string UnicodeToUTF8(const std::wstring& wstr);
-    static std::wstring UTF8ToUnicode(const std::string& str);
-    static std::string UnicodeToANSI(const std::wstring& wstr);
-    static std::wstring ANSIToUnicode(const std::string& str);
+    // String conversion functions
+	static std::string UnicodeToUTF8(const std::wstring& wstr);
+	static std::wstring UTF8ToUnicode(const std::string& str);
+	static std::string UnicodeToANSI(const std::wstring& wstr);
+	static std::wstring ANSIToUnicode(const std::string& str);
+	static std::wstring ANSIToUnicodeSafe(const std::string& str);  // 更安全的替代函数
 
 private:
     APIConfig config_;
