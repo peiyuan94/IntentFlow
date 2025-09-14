@@ -10,22 +10,67 @@
 #include <json/json.h>
 #include <regex>
 #include <memory>
+#include <chrono>
+#include <iomanip>
+#include <ctime>
+#include <locale>
+#include <codecvt>
+
+// Add log file stream
+static std::ofstream logFile;
+static bool logInitialized = false;
+
+// Log function
+void WriteLog(const std::wstring& message) {
+    if (!logInitialized) {
+        logFile.open("D:\\Git_ZPY\\IntentFlow\\gui_task_processor.log", std::ios::out | std::ios::app);
+        logInitialized = true;
+    }
+    
+    if (logFile.is_open()) {
+        // Get current time
+        auto now = std::chrono::system_clock::now();
+        auto time_t = std::chrono::system_clock::to_time_t(now);
+        
+        // Format time as string using safe localtime_s
+        std::ostringstream timeStream;
+        std::tm localTime;
+        localtime_s(&localTime, &time_t);  // Use safe localtime_s instead of localtime
+        timeStream << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S");
+        std::string timeStr = timeStream.str();
+        
+        // Convert wide string message to narrow string
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        std::string narrowMessage = converter.to_bytes(message);
+        
+        logFile << "[" << timeStr << "] " << narrowMessage << std::endl;
+        logFile.flush();
+    }
+}
 
 GUITaskProcessor::GUITaskProcessor() {
+    WriteLog(L"GUITaskProcessor constructor called");
     // Initialize QwenAPI
     // API key needs to be set via setApiKey function
 }
 
 GUITaskProcessor::~GUITaskProcessor() {
+    WriteLog(L"GUITaskProcessor destructor called");
     // Destructor
+    if (logFile.is_open()) {
+        logFile.close();
+    }
 }
 
 void GUITaskProcessor::setApiKey(const std::string& apiKey) {
+    WriteLog(L"setApiKey called");
     qwenAPI_.setApiKey(apiKey);
 }
 
 bool GUITaskProcessor::processAllTasks() {
+    WriteLog(L"processAllTasks called");
     std::wcout << L"[GUITaskProcessor] Starting to process all GUI tasks..." << std::endl;
+    WriteLog(L"[GUITaskProcessor] Starting to process all GUI tasks...");
     
     // Define task types and paths
     std::vector<std::pair<std::string, std::string>> taskConfigs = {
@@ -41,6 +86,7 @@ bool GUITaskProcessor::processAllTasks() {
         
         std::wcout << L"[GUITaskProcessor] Processing task type: " << 
             std::wstring(taskType.begin(), taskType.end()) << std::endl;
+        WriteLog(L"[GUITaskProcessor] Processing task type: " + std::wstring(taskType.begin(), taskType.end()));
         
         std::string jsonFilePath;
         if (taskType == "gui_grounding") {
@@ -58,6 +104,7 @@ bool GUITaskProcessor::processAllTasks() {
         if (!loadTaskData(jsonFilePath, tasks)) {
             std::wcout << L"[GUITaskProcessor] Failed to load task data from: " << 
                 std::wstring(jsonFilePath.begin(), jsonFilePath.end()) << std::endl;
+            WriteLog(L"[GUITaskProcessor] Failed to load task data from: " + std::wstring(jsonFilePath.begin(), jsonFilePath.end()));
             continue;
         }
         
@@ -65,11 +112,13 @@ bool GUITaskProcessor::processAllTasks() {
         if (!processGUITasks(taskType, imageBasePath, jsonFilePath, tasks)) {
             std::wcout << L"[GUITaskProcessor] Failed to process tasks for type: " << 
                 std::wstring(taskType.begin(), taskType.end()) << std::endl;
+            WriteLog(L"[GUITaskProcessor] Failed to process tasks for type: " + std::wstring(taskType.begin(), taskType.end()));
             continue;
         }
     }
     
     std::wcout << L"[GUITaskProcessor] Finished processing all GUI tasks." << std::endl;
+    WriteLog(L"[GUITaskProcessor] Finished processing all GUI tasks.");
     return true;
 }
 
@@ -185,8 +234,11 @@ bool GUITaskProcessor::processGUITasks(const std::string& taskType,
                                       const std::string& imagePath,
                                       const std::string& jsonDataPath,
                                       Json::Value& tasks) {
+    WriteLog(L"processGUITasks called with taskType: " + std::wstring(taskType.begin(), taskType.end()));
     std::wcout << L"[GUITaskProcessor] Processing " << tasks.size() << L" " << 
         std::wstring(taskType.begin(), taskType.end()) << L" tasks" << std::endl;
+    WriteLog(L"[GUITaskProcessor] Processing " + std::to_wstring(tasks.size()) + L" " + 
+        std::wstring(taskType.begin(), taskType.end()) + L" tasks");
     
     // Process each task
     for (Json::Value& task : tasks) {
@@ -207,16 +259,18 @@ bool GUITaskProcessor::processGUITasks(const std::string& taskType,
         std::wcout << L"[GUITaskProcessor] Processed task " << 
             std::wstring(questionId.begin(), questionId.end()) << 
             L", answer: " << std::wstring(answer.begin(), answer.end()) << std::endl;
+        WriteLog(L"[GUITaskProcessor] Processed task " + std::wstring(questionId.begin(), questionId.end()) + 
+            L", answer: " + std::wstring(answer.begin(), answer.end()));
     }
     
     // Save results
     std::string outputFileName;
     if (taskType == "gui_grounding") {
-        outputFileName = "gui_grounding.json";
+        outputFileName = "gui_grounding_result.json";
     } else if (taskType == "gui_referring") {
-        outputFileName = "gui_referring.json";
+        outputFileName = "gui_referring_result.json";
     } else if (taskType == "advanced_vqa") {
-        outputFileName = "gui_vqa.json";
+        outputFileName = "gui_vqa_result.json";
     }
     
     std::string outputFilePath = "D:\\Git_ZPY\\IntentFlow\\" + outputFileName;
@@ -227,8 +281,10 @@ std::string GUITaskProcessor::processGUITask(const std::string& taskType,
                                             const std::string& imagePath,
                                             const std::string& question,
                                             const std::string& questionId) {
+    WriteLog(L"processGUITask called for questionId: " + std::wstring(questionId.begin(), questionId.end()));
     std::wcout << L"[GUITaskProcessor] Processing task: " << 
         std::wstring(questionId.begin(), questionId.end()) << std::endl;
+    WriteLog(L"[GUITaskProcessor] Processing task: " + std::wstring(questionId.begin(), questionId.end()));
     
     // Build prompt
     std::string prompt;
@@ -240,13 +296,19 @@ std::string GUITaskProcessor::processGUITask(const std::string& taskType,
         prompt = buildPromptForVQA(question);
     }
     
+    WriteLog(L"[GUITaskProcessor] Prompt: " + std::wstring(prompt.begin(), prompt.end()));
+    
     // Call Qwen API
     std::vector<std::string> imagePaths = {imagePath};
     QwenAPI::APIResponse response = qwenAPI_.sendImageQuery(imagePaths, prompt);
     
+    WriteLog(L"[GUITaskProcessor] API Response success: " + std::wstring(response.success ? L"true" : L"false"));
+    WriteLog(L"[GUITaskProcessor] API Response content: " + std::wstring(response.content.begin(), response.content.end()));
+    
     if (!response.success) {
         std::wcout << L"[GUITaskProcessor] Failed to get response for task: " << 
             std::wstring(questionId.begin(), questionId.end()) << std::endl;
+        WriteLog(L"[GUITaskProcessor] Failed to get response for task: " + std::wstring(questionId.begin(), questionId.end()));
         return "";
     }
     
@@ -259,6 +321,8 @@ std::string GUITaskProcessor::processGUITask(const std::string& taskType,
     } else if (taskType == "advanced_vqa") {
         answer = parseResultForVQA(response.content);
     }
+    
+    WriteLog(L"[GUITaskProcessor] Parsed answer: " + std::wstring(answer.begin(), answer.end()));
     
     return answer;
 }
@@ -288,16 +352,77 @@ std::string GUITaskProcessor::buildPromptForVQA(const std::string& question) {
 }
 
 std::string GUITaskProcessor::parseResultForGrounding(const std::string& response) {
-    // Use regular expression to extract coordinates
-    std::regex coordRegex(R"($$[^$$]*\d+[^$$]*$$)");
-    std::smatch match;
+    WriteLog(L"[parseResultForGrounding] Processing response");
+    WriteLog(L"[parseResultForGrounding] Response content: " + std::wstring(response.begin(), response.end()));
     
-    if (std::regex_search(response, match, coordRegex)) {
-        return match.str();
+    // First try to extract coordinates from the complete API response
+    // API response format example: {"output":{"choices":[{"message":{"content":[{"text":"[247,350,478,386]"}],"role":"assistant"},"finish_reason":"stop"}]}}
+    
+    // Find the content field
+    size_t contentPos = response.find("\"content\"");
+    if (contentPos != std::string::npos) {
+        WriteLog(L"[parseResultForGrounding] Found content field at position: " + std::to_wstring(contentPos));
+        
+        // Find the text field within content
+        size_t textPos = response.find("\"text\"", contentPos);
+        if (textPos != std::string::npos) {
+            WriteLog(L"[parseResultForGrounding] Found text field at position: " + std::to_wstring(textPos));
+            
+            // Find the start of the value (skip "text":)
+            size_t valueStart = response.find("\"", textPos + 7);
+            if (valueStart != std::string::npos) {
+                valueStart++; // Skip the first quote
+                WriteLog(L"[parseResultForGrounding] Value start position: " + std::to_wstring(valueStart));
+                
+                // Find the end of the value
+                size_t valueEnd = response.find("\"", valueStart);
+                if (valueEnd != std::string::npos) {
+                    WriteLog(L"[parseResultForGrounding] Value end position: " + std::to_wstring(valueEnd));
+                    
+                    // Extract the content text
+                    std::string contentText = response.substr(valueStart, valueEnd - valueStart);
+                    WriteLog(L"[parseResultForGrounding] Extracted content text: " + std::wstring(contentText.begin(), contentText.end()));
+                    
+                    // Extract coordinates from contentText
+                    std::regex coordRegex(R"(\$$\s*\d+\s*,\s*\d+\s*(?:,\s*\d+\s*,\s*\d+\s*)?\$)");
+                    std::smatch match;
+                    
+                    if (std::regex_search(contentText, match, coordRegex)) {
+                        std::string result = match.str();
+                        WriteLog(L"[parseResultForGrounding] Found coordinates: " + std::wstring(result.begin(), result.end()));
+                        return result;
+                    } else {
+                        WriteLog(L"[parseResultForGrounding] No coordinates found in content text");
+                    }
+                } else {
+                    WriteLog(L"[parseResultForGrounding] Could not find end quote for value");
+                }
+            } else {
+                WriteLog(L"[parseResultForGrounding] Could not find start quote for value");
+            }
+        } else {
+            WriteLog(L"[parseResultForGrounding] Could not find text field");
+        }
+    } else {
+        WriteLog(L"[parseResultForGrounding] Could not find content field");
     }
     
-    // If no standard format is found, return the original response
-    return response;
+    // If the above method fails, try to find coordinates directly in the response
+    WriteLog(L"[parseResultForGrounding] Trying direct coordinate search");
+    std::regex directCoordRegex(R"(\$$\s*\d+\s*,\s*\d+\s*(?:,\s*\d+\s*,\s*\d+\s*)?\$)");
+    std::smatch directMatch;
+    
+    if (std::regex_search(response, directMatch, directCoordRegex)) {
+        std::string result = directMatch.str();
+        WriteLog(L"[parseResultForGrounding] Found coordinates directly: " + std::wstring(result.begin(), result.end()));
+        return result;
+    } else {
+        WriteLog(L"[parseResultForGrounding] No coordinates found directly in response");
+    }
+    
+    // If still not found, return empty string
+    WriteLog(L"[parseResultForGrounding] No coordinates found, returning empty string");
+    return "";
 }
 
 std::string GUITaskProcessor::parseResultForReferring(const std::string& response) {
@@ -324,12 +449,20 @@ bool GUITaskProcessor::saveResults(const std::string& outputPath, const Json::Va
     
     // Write in JSON Lines format
     for (const auto& result : results) {
+        // Create a new JSON object with only the required fields
+        Json::Value outputResult;
+        outputResult["image"] = result["image"];
+        outputResult["question_id"] = result["question_id"];
+        outputResult["type"] = result["type"];
+        outputResult["question"] = result["question"];
+        outputResult["answer"] = result["answer"];
+        
         // Write each result on a separate line
         Json::StreamWriterBuilder builder;
         builder["indentation"] = "";
         std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
         std::ostringstream oss;
-        writer->write(result, &oss);
+        writer->write(outputResult, &oss);
         outputFile << oss.str() << std::endl;
     }
     

@@ -22,6 +22,7 @@ public:
 protected:
 	HICON m_hIcon;
 	std::unique_ptr<GUITaskProcessor> m_guiTaskProcessor; // 添加GUITaskProcessor实例
+	CEdit m_editAPIKey; // 添加API密钥编辑框控件变量
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();

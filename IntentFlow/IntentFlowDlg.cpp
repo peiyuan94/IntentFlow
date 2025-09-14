@@ -62,6 +62,7 @@ CIntentFlowDlg::CIntentFlowDlg(CWnd* pParent /*=nullptr*/)
 void CIntentFlowDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_EDIT_API_KEY, m_editAPIKey); // 关联API密钥编辑框控件
 }
 
 BEGIN_MESSAGE_MAP(CIntentFlowDlg, CDialogEx)
@@ -174,12 +175,23 @@ void CIntentFlowDlg::OnBnClickedGuiGroundingButton()
 	// MessageBox(_T("GUI Grounding test started"), _T("Info"), MB_OK);
 	// 在这里调用GUI Grounding任务处理函数
 	
+	// 获取API密钥
+	CString strAPIKey;
+	m_editAPIKey.GetWindowText(strAPIKey);
+	
+	// 检查API密钥是否为空
+	if (strAPIKey.IsEmpty()) {
+		MessageBox(_T("Please enter API Key first!"), _T("Warning"), MB_OK | MB_ICONWARNING);
+		return;
+	}
+	
+	// 设置API密钥
+	m_guiTaskProcessor->setApiKey(CStringA(strAPIKey).GetString());
+	
 	// 显示提示信息
 	MessageBox(_T("GUI Grounding batch processing started. This may take some time."), _T("Info"), MB_OK);
 	
 	// 调用GUITaskProcessor处理GUI Grounding任务
-	// 注意：实际使用时需要设置API密钥
-	// m_guiTaskProcessor->setApiKey("your-api-key-here");
 	bool success = m_guiTaskProcessor->processGUITasks("gui_grounding");
 	
 	if (success) {
@@ -195,12 +207,23 @@ void CIntentFlowDlg::OnBnClickedGuiReferringButton()
 	// MessageBox(_T("GUI Referring test started"), _T("Info"), MB_OK);
 	// 在这里调用GUI Referring任务处理函数
 	
+	// 获取API密钥
+	CString strAPIKey;
+	m_editAPIKey.GetWindowText(strAPIKey);
+	
+	// 检查API密钥是否为空
+	if (strAPIKey.IsEmpty()) {
+		MessageBox(_T("Please enter API Key first!"), _T("Warning"), MB_OK | MB_ICONWARNING);
+		return;
+	}
+	
+	// 设置API密钥
+	m_guiTaskProcessor->setApiKey(CStringA(strAPIKey).GetString());
+	
 	// 显示提示信息
 	MessageBox(_T("GUI Referring batch processing started. This may take some time."), _T("Info"), MB_OK);
 	
 	// 调用GUITaskProcessor处理GUI Referring任务
-	// 注意：实际使用时需要设置API密钥
-	// m_guiTaskProcessor->setApiKey("your-api-key-here");
 	bool success = m_guiTaskProcessor->processGUITasks("gui_referring");
 	
 	if (success) {
@@ -216,12 +239,23 @@ void CIntentFlowDlg::OnBnClickedGuiVqaButton()
 	// MessageBox(_T("GUI VQA test started"), _T("Info"), MB_OK);
 	// 在这里调用GUI VQA任务处理函数
 	
+	// 获取API密钥
+	CString strAPIKey;
+	m_editAPIKey.GetWindowText(strAPIKey);
+	
+	// 检查API密钥是否为空
+	if (strAPIKey.IsEmpty()) {
+		MessageBox(_T("Please enter API Key first!"), _T("Warning"), MB_OK | MB_ICONWARNING);
+		return;
+	}
+	
+	// 设置API密钥
+	m_guiTaskProcessor->setApiKey(CStringA(strAPIKey).GetString());
+	
 	// 显示提示信息
 	MessageBox(_T("GUI VQA batch processing started. This may take some time."), _T("Info"), MB_OK);
 	
 	// 调用GUITaskProcessor处理GUI VQA任务
-	// 注意：实际使用时需要设置API密钥
-	// m_guiTaskProcessor->setApiKey("your-api-key-here");
 	bool success = m_guiTaskProcessor->processGUITasks("advanced_vqa");
 	
 	if (success) {
