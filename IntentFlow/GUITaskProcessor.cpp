@@ -383,16 +383,25 @@ std::string GUITaskProcessor::parseResultForGrounding(const std::string& respons
                     std::string contentText = response.substr(valueStart, valueEnd - valueStart);
                     WriteLog(L"[parseResultForGrounding] Extracted content text: " + std::wstring(contentText.begin(), contentText.end()));
                     
-                    // Extract coordinates from contentText
-                    std::regex coordRegex(R"(\$$\s*\d+\s*,\s*\d+\s*(?:,\s*\d+\s*,\s*\d+\s*)?\$)");
-                    std::smatch match;
-                    
-                    if (std::regex_search(contentText, match, coordRegex)) {
-                        std::string result = match.str();
-                        WriteLog(L"[parseResultForGrounding] Found coordinates: " + std::wstring(result.begin(), result.end()));
-                        return result;
+                    // Check if contentText contains coordinates format
+                    if (contentText.front() == '[' && contentText.back() == ']') {
+                        // Validate that it contains only digits and commas
+                        bool valid = true;
+                        for (size_t i = 1; i < contentText.length() - 1; i++) {
+                            if (!isdigit(contentText[i]) && contentText[i] != ',') {
+                                valid = false;
+                                break;
+                            }
+                        }
+                        
+                        if (valid) {
+                            WriteLog(L"[parseResultForGrounding] Found coordinates using string parsing: " + std::wstring(contentText.begin(), contentText.end()));
+                            return contentText;
+                        } else {
+                            WriteLog(L"[parseResultForGrounding] Content text has brackets but contains invalid characters");
+                        }
                     } else {
-                        WriteLog(L"[parseResultForGrounding] No coordinates found in content text");
+                        WriteLog(L"[parseResultForGrounding] Content text doesn't have bracket format");
                     }
                 } else {
                     WriteLog(L"[parseResultForGrounding] Could not find end quote for value");
@@ -409,15 +418,35 @@ std::string GUITaskProcessor::parseResultForGrounding(const std::string& respons
     
     // If the above method fails, try to find coordinates directly in the response
     WriteLog(L"[parseResultForGrounding] Trying direct coordinate search");
-    std::regex directCoordRegex(R"(\$$\s*\d+\s*,\s*\d+\s*(?:,\s*\d+\s*,\s*\d+\s*)?\$)");
-    std::smatch directMatch;
     
-    if (std::regex_search(response, directMatch, directCoordRegex)) {
-        std::string result = directMatch.str();
-        WriteLog(L"[parseResultForGrounding] Found coordinates directly: " + std::wstring(result.begin(), result.end()));
-        return result;
+    // Search for the last occurrence of a bracketed coordinate pattern
+    size_t lastOpenBracket = response.rfind('[');
+    if (lastOpenBracket != std::string::npos) {
+        size_t lastCloseBracket = response.find(']', lastOpenBracket);
+        if (lastCloseBracket != std::string::npos) {
+            std::string potentialCoords = response.substr(lastOpenBracket, lastCloseBracket - lastOpenBracket + 1);
+            WriteLog(L"[parseResultForGrounding] Potential coordinates found: " + std::wstring(potentialCoords.begin(), potentialCoords.end()));
+            
+            // Validate that it contains only digits and commas (and brackets)
+            bool valid = true;
+            for (size_t i = 1; i < potentialCoords.length() - 1; i++) {
+                if (!isdigit(potentialCoords[i]) && potentialCoords[i] != ',') {
+                    valid = false;
+                    break;
+                }
+            }
+            
+            if (valid && potentialCoords.front() == '[' && potentialCoords.back() == ']') {
+                WriteLog(L"[parseResultForGrounding] Found coordinates directly using string parsing: " + std::wstring(potentialCoords.begin(), potentialCoords.end()));
+                return potentialCoords;
+            } else {
+                WriteLog(L"[parseResultForGrounding] Direct search found text in brackets but contains invalid characters");
+            }
+        } else {
+            WriteLog(L"[parseResultForGrounding] Found open bracket but no close bracket");
+        }
     } else {
-        WriteLog(L"[parseResultForGrounding] No coordinates found directly in response");
+        WriteLog(L"[parseResultForGrounding] No open bracket found in response");
     }
     
     // If still not found, return empty string
