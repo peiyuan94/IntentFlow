@@ -175,6 +175,12 @@ std::string QwenAPI::scaleImage(const std::string& imagePath) {
         
         std::wcout << L"[scaleImage] Target image size: " << targetWidth << L"x" << targetHeight << L" for image: " << widePath << std::endl;
         
+        // Calculate scale factors for logging purposes
+        float scaleX = (float)targetWidth / originalWidth;
+        float scaleY = (float)targetHeight / originalHeight;
+        
+        std::wcout << L"[scaleImage] Scale factors - X: " << scaleX << L", Y: " << scaleY << L" for image: " << widePath << std::endl;
+        
         // Resize the image to exact dimensions using high quality interpolation
         cv::Mat resizedImage;
         cv::resize(image, resizedImage, cv::Size(targetWidth, targetHeight), 0, 0, cv::INTER_LANCZOS4);

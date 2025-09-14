@@ -6,6 +6,12 @@
 #include <json/json.h>
 #include <memory>
 
+// String conversion function declarations
+std::wstring UTF8ToUnicode(const std::string& str);
+std::string UnicodeToUTF8(const std::wstring& wstr);
+std::pair<int, int> getImageDimensions(const std::string& imagePath);
+void WriteLog(const std::wstring& message);
+
 class GUITaskProcessor {
 public:
     // Constructor
@@ -51,6 +57,9 @@ private:
     std::string parseResultForGrounding(const std::string& response);
     std::string parseResultForReferring(const std::string& response);
     std::string parseResultForVQA(const std::string& response);
+    
+    // Function to scale coordinates from 960x960 back to original image size
+    std::string scaleCoordinatesInAnswer(const std::string& coordinates);
     
     // Qwen API instance
     QwenAPI qwenAPI_;
