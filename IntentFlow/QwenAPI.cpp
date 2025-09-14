@@ -10,6 +10,8 @@
 #include <codecvt>
 #include <locale>
 
+#include <opencv2/opencv.hpp>
+
 
 QwenAPI::QwenAPI(const APIConfig& config) : config_(config) {
 	// Validate API key
@@ -147,17 +149,73 @@ std::string QwenAPI::base64Encode(const std::string& data) {
 }
 
 std::string QwenAPI::scaleImage(const std::string& imagePath) {
-    // TODO: Implement image scaling using OpenCV instead of GDI+
-    // This function should:
-    // 1. Load the image from imagePath
-    // 2. Calculate scaling factor to fit within 540x960 while maintaining aspect ratio
-    // 3. Resize the image using high quality interpolation
-    // 4. Encode the resized image as JPEG in memory
-    // 5. Convert the image data to Base64 and return it
-    
-    // For now, return empty string to indicate failure and fall back to original method
-    std::wcout << L"[scaleImage] OpenCV implementation not yet available, falling back to original method" << std::endl;
-    return "";
+    try {
+        // Convert imagePath to wide string for OpenCV
+        std::wstring widePath = ANSIToUnicodeSafe(imagePath);
+        std::string utf8Path = UnicodeToUTF8(widePath);
+        
+        std::wcout << L"[scaleImage] Processing image: " << widePath << std::endl;
+        
+        // Load the image
+        cv::Mat image = cv::imread(utf8Path, cv::IMREAD_COLOR);
+        if (image.empty()) {
+            std::wcout << L"[scaleImage] Failed to load image: " << widePath << std::endl;
+            return "";
+        }
+        
+        // Get original dimensions
+        int originalWidth = image.cols;
+        int originalHeight = image.rows;
+        
+        std::wcout << L"[scaleImage] Original image size: " << originalWidth << L"x" << originalHeight << L" for image: " << widePath << std::endl;
+        
+        // Target dimensions (540x960)
+        const int targetWidth = 540;
+        const int targetHeight = 960;
+        
+        // Calculate scale factor to maintain aspect ratio
+        float scaleX = (float)targetWidth / originalWidth;
+        float scaleY = (float)targetHeight / originalHeight;
+        float scale = std::min<float>(scaleX, scaleY);
+        
+        // Calculate new dimensions
+        int newWidth = static_cast<int>(originalWidth * scale);
+        int newHeight = static_cast<int>(originalHeight * scale);
+        
+        std::wcout << L"[scaleImage] Scaled image size: " << newWidth << L"x" << newHeight << L" for image: " << widePath << std::endl;
+        
+        // Resize the image using high quality interpolation
+        cv::Mat resizedImage;
+        cv::resize(image, resizedImage, cv::Size(newWidth, newHeight), 0, 0, cv::INTER_LANCZOS4);
+        
+        // Encode the resized image as JPEG in memory
+        std::vector<uchar> buffer;
+        std::vector<int> params;
+        params.push_back(cv::IMWRITE_JPEG_QUALITY);
+        params.push_back(90); // JPEG quality
+        
+        bool success = cv::imencode(".jpg", resizedImage, buffer, params);
+        if (!success) {
+            std::wcout << L"[scaleImage] Failed to encode image to JPEG for image: " << widePath << std::endl;
+            return "";
+        }
+        
+        // Convert the image data to Base64
+        std::string imageData(buffer.begin(), buffer.end());
+        std::string base64Result = base64Encode(imageData);
+        
+        std::wcout << L"[scaleImage] Successfully encoded image to base64, size: " << base64Result.length() << L" characters for image: " << widePath << std::endl;
+        
+        return base64Result;
+    }
+    catch (const std::exception& e) {
+        std::wcout << L"[scaleImage] Exception occurred: " << ANSIToUnicodeSafe(std::string(e.what())) << std::endl;
+        return "";
+    }
+    catch (...) {
+        std::wcout << L"[scaleImage] Unknown exception occurred" << std::endl;
+        return "";
+    }
 }
 
 bool QwenAPI::validateApiKey(const std::string& apiKey) {
