@@ -467,35 +467,141 @@ std::string GUITaskProcessor::parseResultForVQA(const std::string& response) {
 bool GUITaskProcessor::saveResults(const std::string& outputPath, const Json::Value& results) {
     std::wcout << L"[GUITaskProcessor] Saving results to: " << 
         std::wstring(outputPath.begin(), outputPath.end()) << std::endl;
+    WriteLog(L"[GUITaskProcessor] Saving results to: " + std::wstring(outputPath.begin(), outputPath.end()));
+    
+    // Determine the source file path based on the output path
+    std::string sourceFilePath;
+    if (outputPath.find("gui_grounding_result.json") != std::string::npos) {
+        sourceFilePath = "D:\\Git_ZPY\\IntentFlow\\test\\GUI_Grounding\\GUI_Grounding.json";
+    } else if (outputPath.find("gui_referring_result.json") != std::string::npos) {
+        sourceFilePath = "D:\\Git_ZPY\\IntentFlow\\test\\GUI_Referring\\GUI_Referring.json";
+    } else if (outputPath.find("gui_vqa_result.json") != std::string::npos) {
+        sourceFilePath = "D:\\Git_ZPY\\IntentFlow\\test\\GUI_VQA\\GUI_VQA.json";
+    } else {
+        std::wcout << L"[GUITaskProcessor] Unknown output file type, using default save method" << std::endl;
+        WriteLog(L"[GUITaskProcessor] Unknown output file type, using default save method");
+        // Fallback to original method
+        std::ofstream outputFile(outputPath);
+        if (!outputFile.is_open()) {
+            std::wcout << L"[GUITaskProcessor] Failed to open output file: " << 
+                std::wstring(outputPath.begin(), outputPath.end()) << std::endl;
+            WriteLog(L"[GUITaskProcessor] Failed to open output file: " + std::wstring(outputPath.begin(), outputPath.end()));
+            return false;
+        }
+        
+        for (const auto& result : results) {
+            Json::Value outputResult;
+            outputResult["image"] = result["image"];
+            outputResult["type"] = result["type"];
+            outputResult["question_id"] = result["question_id"];
+            outputResult["question"] = result["question"];
+            outputResult["answer"] = result["answer"];
+            
+            Json::StreamWriterBuilder builder;
+            builder["indentation"] = "";
+            std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+            std::ostringstream oss;
+            writer->write(outputResult, &oss);
+            outputFile << oss.str() << std::endl;
+        }
+        
+        outputFile.close();
+        std::wcout << L"[GUITaskProcessor] Saved " << results.size() << L" results" << std::endl;
+        WriteLog(L"[GUITaskProcessor] Saved " + std::to_wstring(results.size()) + L" results");
+        return true;
+    }
+    
+    WriteLog(L"[GUITaskProcessor] Source file path: " + std::wstring(sourceFilePath.begin(), sourceFilePath.end()));
+    
+    // Load the original source file
+    std::ifstream sourceFile(sourceFilePath);
+    if (!sourceFile.is_open()) {
+        std::wcout << L"[GUITaskProcessor] Failed to open source file: " << 
+            std::wstring(sourceFilePath.begin(), sourceFilePath.end()) << std::endl;
+        WriteLog(L"[GUITaskProcessor] Failed to open source file: " + std::wstring(sourceFilePath.begin(), sourceFilePath.end()));
+        return false;
+    }
+    
+    // Read all lines from the source file
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(sourceFile, line)) {
+        if (!line.empty()) {
+            lines.push_back(line);
+        }
+    }
+    sourceFile.close();
+    
+    WriteLog(L"[GUITaskProcessor] Loaded source file lines, count: " + std::to_wstring(lines.size()));
+    
+    // Create a map of question_id to answer
+    std::map<std::string, std::string> answerMap;
+    for (const auto& result : results) {
+        std::string questionId = result["question_id"].asString();
+        std::string answer = result["answer"].asString();
+        answerMap[questionId] = answer;
+    }
+    
+    WriteLog(L"[GUITaskProcessor] Created answer map, size: " + std::to_wstring(answerMap.size()));
     
     // Open output file
     std::ofstream outputFile(outputPath);
     if (!outputFile.is_open()) {
         std::wcout << L"[GUITaskProcessor] Failed to open output file: " << 
             std::wstring(outputPath.begin(), outputPath.end()) << std::endl;
+        WriteLog(L"[GUITaskProcessor] Failed to open output file: " + std::wstring(outputPath.begin(), outputPath.end()));
         return false;
     }
     
-    // Write in JSON Lines format
-    for (const auto& result : results) {
-        // Create a new JSON object with only the required fields
-        Json::Value outputResult;
-        outputResult["image"] = result["image"];
-        outputResult["question_id"] = result["question_id"];
-        outputResult["type"] = result["type"];
-        outputResult["question"] = result["question"];
-        outputResult["answer"] = result["answer"];
+    // Process each line
+    for (const std::string& originalLine : lines) {
+        std::string processedLine = originalLine;
         
-        // Write each result on a separate line
-        Json::StreamWriterBuilder builder;
-        builder["indentation"] = "";
-        std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
-        std::ostringstream oss;
-        writer->write(outputResult, &oss);
-        outputFile << oss.str() << std::endl;
+        // Extract question_id from the line
+        size_t questionIdPos = processedLine.find("\"question_id\"");
+        if (questionIdPos != std::string::npos) {
+            size_t colonPos = processedLine.find(":", questionIdPos);
+            if (colonPos != std::string::npos) {
+                size_t startQuotePos = processedLine.find("\"", colonPos);
+                if (startQuotePos != std::string::npos) {
+                    size_t endQuotePos = processedLine.find("\"", startQuotePos + 1);
+                    if (endQuotePos != std::string::npos) {
+                        std::string questionId = processedLine.substr(startQuotePos + 1, endQuotePos - startQuotePos - 1);
+                        
+                        // Look up the new answer
+                        auto it = answerMap.find(questionId);
+                        if (it != answerMap.end()) {
+                            // Find the answer field and replace its value
+                            size_t answerPos = processedLine.find("\"answer\"");
+                            if (answerPos != std::string::npos) {
+                                size_t answerColonPos = processedLine.find(":", answerPos);
+                                if (answerColonPos != std::string::npos) {
+                                    size_t answerStartQuotePos = processedLine.find("\"", answerColonPos);
+                                    if (answerStartQuotePos != std::string::npos) {
+                                        size_t answerEndQuotePos = processedLine.find("\"", answerStartQuotePos + 1);
+                                        if (answerEndQuotePos != std::string::npos) {
+                                            // Replace the answer value
+                                            std::string newLine = processedLine.substr(0, answerStartQuotePos + 1);
+                                            newLine += it->second;
+                                            newLine += processedLine.substr(answerEndQuotePos);
+                                            processedLine = newLine;
+                                            WriteLog(L"[GUITaskProcessor] Updated answer for question ID: " + std::wstring(questionId.begin(), questionId.end()));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Write the processed line to output file
+        outputFile << processedLine << std::endl;
     }
     
     outputFile.close();
-    std::wcout << L"[GUITaskProcessor] Saved " << results.size() << L" results" << std::endl;
+    std::wcout << L"[GUITaskProcessor] Saved " << lines.size() << L" results" << std::endl;
+    WriteLog(L"[GUITaskProcessor] Saved " + std::to_wstring(lines.size()) + L" results");
     return true;
 }
