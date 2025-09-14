@@ -1,5 +1,6 @@
-﻿#pragma once
+#pragma once
 
+#include "GUITaskProcessor.h" // 添加GUITaskProcessor头文件包含
 
 // CIntentFlowDlg 对话框
 class CIntentFlowDlg : public CDialogEx
@@ -20,6 +21,7 @@ public:
 // 实现
 protected:
 	HICON m_hIcon;
+	std::unique_ptr<GUITaskProcessor> m_guiTaskProcessor; // 添加GUITaskProcessor实例
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();

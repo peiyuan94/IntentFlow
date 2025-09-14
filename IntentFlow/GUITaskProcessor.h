@@ -8,24 +8,27 @@
 
 class GUITaskProcessor {
 public:
-    // 构造函数
+    // Constructor
     GUITaskProcessor();
     
-    // 析构函数
+    // Destructor
     ~GUITaskProcessor();
 
-    // 主处理函数
+    // Main processing function
     bool processAllTasks();
     
-    // 设置API密钥
+    // Single task type processing function
+    bool processGUITasks(const std::string& taskType);
+    
+    // Set API key
     void setApiKey(const std::string& apiKey);
     
 private:
-    // 数据读取相关函数
+    // Data loading functions
     bool loadTaskData(const std::string& filePath, Json::Value& root);
     bool parseJsonLines(const std::string& content, Json::Value& root);
     
-    // 任务处理相关函数
+    // Task processing functions
     bool processGUITasks(const std::string& taskType, 
                         const std::string& imagePath, 
                         const std::string& jsonDataPath,
@@ -36,19 +39,19 @@ private:
                               const std::string& question,
                               const std::string& questionId);
     
-    // 结果保存相关函数
+    // Result saving functions
     bool saveResults(const std::string& outputPath, const Json::Value& results);
     
-    // 提示词构建函数
+    // Prompt building functions
     std::string buildPromptForGrounding(const std::string& question);
     std::string buildPromptForReferring(const std::string& question);
     std::string buildPromptForVQA(const std::string& question);
     
-    // 结果解析函数
+    // Result parsing functions
     std::string parseResultForGrounding(const std::string& response);
     std::string parseResultForReferring(const std::string& response);
     std::string parseResultForVQA(const std::string& response);
     
-    // Qwen API实例
+    // Qwen API instance
     QwenAPI qwenAPI_;
 };

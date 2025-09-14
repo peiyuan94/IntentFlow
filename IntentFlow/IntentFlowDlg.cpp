@@ -1,4 +1,4 @@
-﻿
+
 // IntentFlowDlg.cpp: 实现文件
 //
 
@@ -15,7 +15,7 @@
 #endif
 
 
-// 用于应用程序“关于”菜单项的 CAboutDlg 对话框
+// 用于应用程序"关于"菜单项的 CAboutDlg 对话框
 
 class CAboutDlg : public CDialogEx
 {
@@ -56,6 +56,7 @@ CIntentFlowDlg::CIntentFlowDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_INTENTFLOW_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_guiTaskProcessor = std::make_unique<GUITaskProcessor>(); // 初始化GUITaskProcessor
 }
 
 void CIntentFlowDlg::DoDataExchange(CDataExchange* pDX)
@@ -80,7 +81,7 @@ BOOL CIntentFlowDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	// 将“关于...”菜单项添加到系统菜单中。
+	// 将"关于..."菜单项添加到系统菜单中。
 
 	// IDM_ABOUTBOX 必须在系统命令范围内。
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
@@ -170,20 +171,62 @@ void CIntentFlowDlg::OnBnClickedBtnOpenTestView()
 void CIntentFlowDlg::OnBnClickedGuiGroundingButton()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	MessageBox(_T("GUI Grounding test started"), _T("Info"), MB_OK);
+	// MessageBox(_T("GUI Grounding test started"), _T("Info"), MB_OK);
 	// 在这里调用GUI Grounding任务处理函数
+	
+	// 显示提示信息
+	MessageBox(_T("GUI Grounding batch processing started. This may take some time."), _T("Info"), MB_OK);
+	
+	// 调用GUITaskProcessor处理GUI Grounding任务
+	// 注意：实际使用时需要设置API密钥
+	// m_guiTaskProcessor->setApiKey("your-api-key-here");
+	bool success = m_guiTaskProcessor->processGUITasks("gui_grounding");
+	
+	if (success) {
+		MessageBox(_T("GUI Grounding batch processing completed successfully! Check the output files."), _T("Success"), MB_OK);
+	} else {
+		MessageBox(_T("GUI Grounding batch processing failed!"), _T("Error"), MB_OK);
+	}
 }
 
 void CIntentFlowDlg::OnBnClickedGuiReferringButton()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	MessageBox(_T("GUI Referring test started"), _T("Info"), MB_OK);
+	// MessageBox(_T("GUI Referring test started"), _T("Info"), MB_OK);
 	// 在这里调用GUI Referring任务处理函数
+	
+	// 显示提示信息
+	MessageBox(_T("GUI Referring batch processing started. This may take some time."), _T("Info"), MB_OK);
+	
+	// 调用GUITaskProcessor处理GUI Referring任务
+	// 注意：实际使用时需要设置API密钥
+	// m_guiTaskProcessor->setApiKey("your-api-key-here");
+	bool success = m_guiTaskProcessor->processGUITasks("gui_referring");
+	
+	if (success) {
+		MessageBox(_T("GUI Referring batch processing completed successfully! Check the output files."), _T("Success"), MB_OK);
+	} else {
+		MessageBox(_T("GUI Referring batch processing failed!"), _T("Error"), MB_OK);
+	}
 }
 
 void CIntentFlowDlg::OnBnClickedGuiVqaButton()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	MessageBox(_T("GUI VQA test started"), _T("Info"), MB_OK);
+	// MessageBox(_T("GUI VQA test started"), _T("Info"), MB_OK);
 	// 在这里调用GUI VQA任务处理函数
+	
+	// 显示提示信息
+	MessageBox(_T("GUI VQA batch processing started. This may take some time."), _T("Info"), MB_OK);
+	
+	// 调用GUITaskProcessor处理GUI VQA任务
+	// 注意：实际使用时需要设置API密钥
+	// m_guiTaskProcessor->setApiKey("your-api-key-here");
+	bool success = m_guiTaskProcessor->processGUITasks("advanced_vqa");
+	
+	if (success) {
+		MessageBox(_T("GUI VQA batch processing completed successfully! Check the output files."), _T("Success"), MB_OK);
+	} else {
+		MessageBox(_T("GUI VQA batch processing failed!"), _T("Error"), MB_OK);
+	}
 }

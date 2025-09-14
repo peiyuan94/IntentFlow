@@ -1,3 +1,7 @@
+// GUITaskProcessor.cpp: Implementation file
+//
+
+#include "pch.h"
 #include "GUITaskProcessor.h"
 #include "framework.h"
 #include <iostream>
@@ -8,12 +12,12 @@
 #include <memory>
 
 GUITaskProcessor::GUITaskProcessor() {
-    // 初始化QwenAPI
-    // API密钥需要通过setApiKey函数设置
+    // Initialize QwenAPI
+    // API key needs to be set via setApiKey function
 }
 
 GUITaskProcessor::~GUITaskProcessor() {
-    // 析构函数
+    // Destructor
 }
 
 void GUITaskProcessor::setApiKey(const std::string& apiKey) {
@@ -23,14 +27,14 @@ void GUITaskProcessor::setApiKey(const std::string& apiKey) {
 bool GUITaskProcessor::processAllTasks() {
     std::wcout << L"[GUITaskProcessor] Starting to process all GUI tasks..." << std::endl;
     
-    // 定义任务类型和路径
+    // Define task types and paths
     std::vector<std::pair<std::string, std::string>> taskConfigs = {
         {"gui_grounding", "D:\\Git_ZPY\\IntentFlow\\test\\GUI_Grounding"},
         {"gui_referring", "D:\\Git_ZPY\\IntentFlow\\test\\GUI_Referring"},
         {"advanced_vqa", "D:\\Git_ZPY\\IntentFlow\\test\\GUI_VQA"}
     };
     
-    // 处理每种任务类型
+    // Process each task type
     for (const auto& taskConfig : taskConfigs) {
         std::string taskType = taskConfig.first;
         std::string basePath = taskConfig.second;
@@ -49,7 +53,7 @@ bool GUITaskProcessor::processAllTasks() {
         
         std::string imageBasePath = basePath + "\\image";
         
-        // 读取任务数据
+        // Load task data
         Json::Value tasks;
         if (!loadTaskData(jsonFilePath, tasks)) {
             std::wcout << L"[GUITaskProcessor] Failed to load task data from: " << 
@@ -57,7 +61,7 @@ bool GUITaskProcessor::processAllTasks() {
             continue;
         }
         
-        // 处理任务
+        // Process tasks
         if (!processGUITasks(taskType, imageBasePath, jsonFilePath, tasks)) {
             std::wcout << L"[GUITaskProcessor] Failed to process tasks for type: " << 
                 std::wstring(taskType.begin(), taskType.end()) << std::endl;
@@ -69,11 +73,63 @@ bool GUITaskProcessor::processAllTasks() {
     return true;
 }
 
+// Single task type processing function
+bool GUITaskProcessor::processGUITasks(const std::string& taskType) {
+    std::wcout << L"[GUITaskProcessor] Starting to process GUI tasks of type: " << 
+        std::wstring(taskType.begin(), taskType.end()) << std::endl;
+    
+    // Define task type and path
+    std::string basePath;
+    if (taskType == "gui_grounding") {
+        basePath = "D:\\Git_ZPY\\IntentFlow\\test\\GUI_Grounding";
+    } else if (taskType == "gui_referring") {
+        basePath = "D:\\Git_ZPY\\IntentFlow\\test\\GUI_Referring";
+    } else if (taskType == "advanced_vqa") {
+        basePath = "D:\\Git_ZPY\\IntentFlow\\test\\GUI_VQA";
+    } else {
+        std::wcout << L"[GUITaskProcessor] Unknown task type: " << 
+            std::wstring(taskType.begin(), taskType.end()) << std::endl;
+        return false;
+    }
+    
+    std::string jsonFilePath;
+    if (taskType == "gui_grounding") {
+        jsonFilePath = basePath + "\\GUI_Grounding.json";
+    } else if (taskType == "gui_referring") {
+        jsonFilePath = basePath + "\\GUI_Referring.json";
+    } else if (taskType == "advanced_vqa") {
+        jsonFilePath = basePath + "\\GUI_VQA.json";
+    }
+    
+    std::string imageBasePath = basePath + "\\image";
+    
+    // Load task data
+    Json::Value tasks;
+    if (!loadTaskData(jsonFilePath, tasks)) {
+        std::wcout << L"[GUITaskProcessor] Failed to load task data from: " << 
+            std::wstring(jsonFilePath.begin(), jsonFilePath.end()) << std::endl;
+        return false;
+    }
+    
+    // Process tasks
+    bool result = processGUITasks(taskType, imageBasePath, jsonFilePath, tasks);
+    
+    if (result) {
+        std::wcout << L"[GUITaskProcessor] Finished processing GUI tasks of type: " << 
+            std::wstring(taskType.begin(), taskType.end()) << std::endl;
+    } else {
+        std::wcout << L"[GUITaskProcessor] Failed to process GUI tasks of type: " << 
+            std::wstring(taskType.begin(), taskType.end()) << std::endl;
+    }
+    
+    return result;
+}
+
 bool GUITaskProcessor::loadTaskData(const std::string& filePath, Json::Value& root) {
     std::wcout << L"[GUITaskProcessor] Loading task data from: " << 
         std::wstring(filePath.begin(), filePath.end()) << std::endl;
     
-    // 打开文件
+    // Open file
     std::ifstream file(filePath);
     if (!file.is_open()) {
         std::wcout << L"[GUITaskProcessor] Failed to open file: " << 
@@ -81,13 +137,13 @@ bool GUITaskProcessor::loadTaskData(const std::string& filePath, Json::Value& ro
         return false;
     }
     
-    // 读取文件内容
+    // Read file content
     std::stringstream buffer;
     buffer << file.rdbuf();
     std::string content = buffer.str();
     file.close();
     
-    // 解析JSON Lines格式
+    // Parse JSON Lines format
     return parseJsonLines(content, root);
 }
 
@@ -96,17 +152,27 @@ bool GUITaskProcessor::parseJsonLines(const std::string& content, Json::Value& r
     std::istringstream iss(content);
     std::string line;
     
-    // 逐行解析JSON
+    // Parse JSON line by line
     while (std::getline(iss, line)) {
         if (line.empty()) continue;
         
         Json::Value task;
-        Json::Reader reader;
-        if (reader.parse(line, task)) {
-            tasks.append(task);
+        // Use CharReader and CharReaderBuilder instead of deprecated Reader
+        Json::CharReaderBuilder builder;
+        Json::CharReader* reader = builder.newCharReader();
+        Json::Value taskValue;
+        std::string errors;
+        
+        // Parse the JSON line
+        bool parsingSuccessful = reader->parse(line.c_str(), line.c_str() + line.size(), &taskValue, &errors);
+        delete reader;
+        
+        if (parsingSuccessful) {
+            tasks.append(taskValue);
         } else {
             std::wcout << L"[GUITaskProcessor] Failed to parse JSON line: " << 
                 std::wstring(line.begin(), line.end()) << std::endl;
+            std::wcout << L"[GUITaskProcessor] Error: " << std::wstring(errors.begin(), errors.end()) << std::endl;
         }
     }
     
@@ -122,20 +188,20 @@ bool GUITaskProcessor::processGUITasks(const std::string& taskType,
     std::wcout << L"[GUITaskProcessor] Processing " << tasks.size() << L" " << 
         std::wstring(taskType.begin(), taskType.end()) << L" tasks" << std::endl;
     
-    // 处理每个任务
+    // Process each task
     for (Json::Value& task : tasks) {
-        // 获取任务信息
+        // Get task information
         std::string imageFileName = task["image"].asString();
         std::string question = task["question"].asString();
         std::string questionId = task["question_id"].asString();
         
-        // 构建完整图像路径
+        // Build full image path
         std::string fullImagePath = imagePath + "\\" + imageFileName;
         
-        // 处理单个任务
+        // Process single task
         std::string answer = processGUITask(taskType, fullImagePath, question, questionId);
         
-        // 更新任务结果
+        // Update task result
         task["answer"] = answer;
         
         std::wcout << L"[GUITaskProcessor] Processed task " << 
@@ -143,7 +209,7 @@ bool GUITaskProcessor::processGUITasks(const std::string& taskType,
             L", answer: " << std::wstring(answer.begin(), answer.end()) << std::endl;
     }
     
-    // 保存结果
+    // Save results
     std::string outputFileName;
     if (taskType == "gui_grounding") {
         outputFileName = "gui_grounding.json";
@@ -164,7 +230,7 @@ std::string GUITaskProcessor::processGUITask(const std::string& taskType,
     std::wcout << L"[GUITaskProcessor] Processing task: " << 
         std::wstring(questionId.begin(), questionId.end()) << std::endl;
     
-    // 构建提示词
+    // Build prompt
     std::string prompt;
     if (taskType == "gui_grounding") {
         prompt = buildPromptForGrounding(question);
@@ -174,9 +240,9 @@ std::string GUITaskProcessor::processGUITask(const std::string& taskType,
         prompt = buildPromptForVQA(question);
     }
     
-    // 调用Qwen API
+    // Call Qwen API
     std::vector<std::string> imagePaths = {imagePath};
-    APIResponse response = qwenAPI_.sendImageQuery(imagePaths, prompt);
+    QwenAPI::APIResponse response = qwenAPI_.sendImageQuery(imagePaths, prompt);
     
     if (!response.success) {
         std::wcout << L"[GUITaskProcessor] Failed to get response for task: " << 
@@ -184,7 +250,7 @@ std::string GUITaskProcessor::processGUITask(const std::string& taskType,
         return "";
     }
     
-    // 解析结果
+    // Parse result
     std::string answer;
     if (taskType == "gui_grounding") {
         answer = parseResultForGrounding(response.content);
@@ -222,7 +288,7 @@ std::string GUITaskProcessor::buildPromptForVQA(const std::string& question) {
 }
 
 std::string GUITaskProcessor::parseResultForGrounding(const std::string& response) {
-    // 使用正则表达式提取坐标
+    // Use regular expression to extract coordinates
     std::regex coordRegex(R"($$[^$$]*\d+[^$$]*$$)");
     std::smatch match;
     
@@ -230,17 +296,17 @@ std::string GUITaskProcessor::parseResultForGrounding(const std::string& respons
         return match.str();
     }
     
-    // 如果没有找到标准格式，返回原始响应
+    // If no standard format is found, return the original response
     return response;
 }
 
 std::string GUITaskProcessor::parseResultForReferring(const std::string& response) {
-    // 对于Referring任务，直接返回响应文本
+    // For Referring tasks, return the response text directly
     return response;
 }
 
 std::string GUITaskProcessor::parseResultForVQA(const std::string& response) {
-    // 对于VQA任务，直接返回响应文本
+    // For VQA tasks, return the response text directly
     return response;
 }
 
@@ -248,7 +314,7 @@ bool GUITaskProcessor::saveResults(const std::string& outputPath, const Json::Va
     std::wcout << L"[GUITaskProcessor] Saving results to: " << 
         std::wstring(outputPath.begin(), outputPath.end()) << std::endl;
     
-    // 打开输出文件
+    // Open output file
     std::ofstream outputFile(outputPath);
     if (!outputFile.is_open()) {
         std::wcout << L"[GUITaskProcessor] Failed to open output file: " << 
@@ -256,9 +322,9 @@ bool GUITaskProcessor::saveResults(const std::string& outputPath, const Json::Va
         return false;
     }
     
-    // 写入JSON Lines格式
+    // Write in JSON Lines format
     for (const auto& result : results) {
-        // 将每个结果写入单独的一行
+        // Write each result on a separate line
         Json::StreamWriterBuilder builder;
         builder["indentation"] = "";
         std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
