@@ -19,6 +19,9 @@
 #define IDC_EDIT_RESULT                 1008
 #define IDC_BTN_EXPORT                  1009
 #define IDC_BTN_OPEN_TEST_VIEW          1010
+#define IDC_GUI_GROUNDING_BUTTON        1011
+#define IDC_GUI_REFERRING_BUTTON        1012
+#define IDC_GUI_VQA_BUTTON              1013
 
 // Next default values for new objects
 // 
@@ -26,7 +29,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        132
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1011
+#define _APS_NEXT_CONTROL_VALUE         1012
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

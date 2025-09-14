@@ -68,6 +68,9 @@ BEGIN_MESSAGE_MAP(CIntentFlowDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BTN_OPEN_TEST_VIEW, &CIntentFlowDlg::OnBnClickedBtnOpenTestView)
+	ON_BN_CLICKED(IDC_GUI_GROUNDING_BUTTON, &CIntentFlowDlg::OnBnClickedGuiGroundingButton)
+	ON_BN_CLICKED(IDC_GUI_REFERRING_BUTTON, &CIntentFlowDlg::OnBnClickedGuiReferringButton)
+	ON_BN_CLICKED(IDC_GUI_VQA_BUTTON, &CIntentFlowDlg::OnBnClickedGuiVqaButton)
 END_MESSAGE_MAP()
 
 
@@ -162,4 +165,25 @@ void CIntentFlowDlg::OnBnClickedBtnOpenTestView()
 	// TODO: 在此添加控件通知处理程序代码
 	CTestViewDlg testViewDlg(this);
 	testViewDlg.DoModal();
+}
+
+void CIntentFlowDlg::OnBnClickedGuiGroundingButton()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	MessageBox(_T("GUI Grounding test started"), _T("Info"), MB_OK);
+	// 在这里调用GUI Grounding任务处理函数
+}
+
+void CIntentFlowDlg::OnBnClickedGuiReferringButton()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	MessageBox(_T("GUI Referring test started"), _T("Info"), MB_OK);
+	// 在这里调用GUI Referring任务处理函数
+}
+
+void CIntentFlowDlg::OnBnClickedGuiVqaButton()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	MessageBox(_T("GUI VQA test started"), _T("Info"), MB_OK);
+	// 在这里调用GUI VQA任务处理函数
 }

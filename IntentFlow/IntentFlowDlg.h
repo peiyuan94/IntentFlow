@@ -29,4 +29,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedBtnOpenTestView();
+	afx_msg void OnBnClickedGuiGroundingButton();
+	afx_msg void OnBnClickedGuiReferringButton();
+	afx_msg void OnBnClickedGuiVqaButton();
 };
