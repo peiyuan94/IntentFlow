@@ -540,9 +540,11 @@ std::string GUITaskProcessor::buildPromptForReferring(const std::string& questio
 
 std::string GUITaskProcessor::buildPromptForVQA(const std::string& question) {
 	std::string prompt = "You are an expert in mobile app GUI understanding. ";
+	prompt += "The input image has been resized to 960x960 pixels for processing. ";
 	prompt += "Please answer the question according to the screen information. ";
 	prompt += "The question is: \"" + question + "\". ";
-	prompt += "Return the answer in the format \"text [x1, y1, x2, y2]\" where the coordinates indicate relevant UI components.";
+	prompt += "Return the answer in the format \"text [x1, y1, x2, y2]\" where the coordinates indicate relevant UI components. ";
+	prompt += "The coordinates should be based on the 960x960 pixel image, not the original image size.";
 	return prompt;
 }
 
@@ -699,8 +701,77 @@ std::string GUITaskProcessor::parseResultForReferring(const std::string& respons
 	return response;
 }
 
+// Helper function to find the matching closing brace
+size_t findMatchingClosingBrace(const std::string& str, size_t openBracePos) {
+	size_t pos = openBracePos + 1;
+	int braceCount = 1;
+
+	while (pos < str.length() && braceCount > 0) {
+		if (str[pos] == '{') {
+			braceCount++;
+		}
+		else if (str[pos] == '}') {
+			braceCount--;
+		}
+		pos++;
+	}
+
+	// If we found the matching brace, return its position; otherwise return npos
+	return (braceCount == 0) ? (pos - 1) : std::string::npos;
+}
+
 std::string GUITaskProcessor::parseResultForVQA(const std::string& response) {
-	// For VQA tasks, return the response text directly
+	WriteLog(L"[parseResultForVQA] Processing response");
+	WriteLog(L"[parseResultForVQA] Response content: " + std::wstring(response.begin(), response.end()));
+
+	// For VQA tasks, we need to extract the description from the API response
+	// The response format example: {"output":{"choices":[{"message":{"content":[{"text":"点击转发帖子"}],"role":"assistant"},"finish_reason":"stop"}]}}
+
+	// Find the content field
+	size_t contentPos = response.find("\"content\"");
+	if (contentPos != std::string::npos) {
+		WriteLog(L"[parseResultForVQA] Found content field at position: " + std::to_wstring(contentPos));
+
+		// Find the text field within content
+		size_t textPos = response.find("\"text\"", contentPos);
+		if (textPos != std::string::npos) {
+			WriteLog(L"[parseResultForVQA] Found text field at position: " + std::to_wstring(textPos));
+
+			// Find the opening brace after "text"
+			size_t openBracePos = response.find("{", textPos - 5);
+			if (openBracePos != std::string::npos) {
+				// Find the closing brace that matches this opening brace
+				size_t closeBracePos = findMatchingClosingBrace(response, openBracePos);
+				if (closeBracePos != std::string::npos) {
+					// Extract everything between the braces
+					std::string contentWithBraces = response.substr(openBracePos, closeBracePos - openBracePos + 1);
+					WriteLog(L"[parseResultForVQA] Extracted content with braces: " + std::wstring(contentWithBraces.begin(), contentWithBraces.end()));
+
+					// Now extract the content between the quotes within this brace
+					size_t firstQuote = 9;
+					size_t secondQuote = contentWithBraces.size() - 2;
+					std::string contentText = contentWithBraces.substr(firstQuote, secondQuote - firstQuote);
+					WriteLog(L"[parseResultForVQA] Extracted content text: " + std::wstring(contentText.begin(), contentText.end()));
+					return contentText;
+				}
+				else {
+					WriteLog(L"[parseResultForVQA] Could not find matching closing brace");
+				}
+			}
+			else {
+				WriteLog(L"[parseResultForVQA] Could not find opening brace after text field");
+			}
+		}
+		else {
+			WriteLog(L"[parseResultForVQA] Could not find text field");
+		}
+	}
+	else {
+		WriteLog(L"[parseResultForVQA] Could not find content field");
+	}
+
+	// If the above method fails, return the whole response as is
+	WriteLog(L"[parseResultForVQA] Returning response as is");
 	return response;
 }
 
