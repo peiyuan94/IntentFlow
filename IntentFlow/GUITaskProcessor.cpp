@@ -752,6 +752,34 @@ std::string GUITaskProcessor::parseResultForVQA(const std::string& response) {
 					size_t secondQuote = contentWithBraces.size() - 2;
 					std::string contentText = contentWithBraces.substr(firstQuote, secondQuote - firstQuote);
 					WriteLog(L"[parseResultForVQA] Extracted content text: " + std::wstring(contentText.begin(), contentText.end()));
+					
+					// Check if the content text contains coordinates and scale them back to original image size
+					size_t openBracketPos = contentText.find('[');
+					if (openBracketPos != std::string::npos) {
+						size_t closeBracketPos = contentText.find(']', openBracketPos);
+						if (closeBracketPos != std::string::npos) {
+							// Extract the coordinate part
+							std::string coordPart = contentText.substr(openBracketPos, closeBracketPos - openBracketPos + 1);
+							
+							// Check if it looks like valid coordinates
+							bool isValidCoord = true;
+							for (size_t i = 1; i < coordPart.length() - 1; i++) {
+								if (!isdigit(coordPart[i]) && coordPart[i] != ',' && coordPart[i] != ' ') {
+									isValidCoord = false;
+									break;
+								}
+							}
+							
+							if (isValidCoord && coordPart.length() > 2) {
+								// Scale coordinates back to original image size
+								std::string scaledCoords = scaleCoordinatesInAnswer(coordPart);
+								
+								// Replace the original coordinates with scaled ones
+								contentText.replace(openBracketPos, closeBracketPos - openBracketPos + 1, scaledCoords);
+							}
+						}
+					}
+					
 					return contentText;
 				}
 				else {
